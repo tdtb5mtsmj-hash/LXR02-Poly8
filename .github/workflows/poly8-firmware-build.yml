@@ -139,6 +139,22 @@ jobs:
           cmake --preset release
           cmake --build --preset release --parallel 2
           arm-none-eabi-size build/release/LXR_V2_STM32F765_Bootloader.elf
+          cd build/release
+          sha256sum LXR_V2_STM32F765_Bootloader.bin > LXR_V2_STM32F765_Bootloader.bin.sha256
+          sha256sum -c LXR_V2_STM32F765_Bootloader.bin.sha256
+
+      - name: Upload test-only hardened bootloader build
+        uses: actions/upload-artifact@v4
+        with:
+          name: LXR_V2_STM32F765_Bootloader-Hardened-TEST-ONLY
+          path: |
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.bin
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.bin.sha256
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.hex
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.elf
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.map
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Check updater safety invariants
         run: python3 bootloader-hardening/tests/bootloader_safety_smoke.py
