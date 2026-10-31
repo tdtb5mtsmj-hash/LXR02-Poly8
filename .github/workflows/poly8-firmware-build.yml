@@ -90,7 +90,7 @@ jobs:
               )
           print(f"Verified {image}: {payload_size} payload bytes, checksum {checksum:#04x}")
           PY
-          sha256sum build/release/LXR_V2_V1.7.img | tee build/release/LXR_V2_V1.7.img.sha256
+          (cd build/release && sha256sum LXR_V2_V1.7.img > LXR_V2_V1.7.img.sha256 && sha256sum -c LXR_V2_V1.7.img.sha256)
 
       - name: Upload verified firmware image
         uses: actions/upload-artifact@v4
