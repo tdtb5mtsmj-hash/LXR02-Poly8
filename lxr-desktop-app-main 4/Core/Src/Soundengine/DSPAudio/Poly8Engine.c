@@ -135,11 +135,22 @@ void Poly8_NoteOn(uint8_t note, uint8_t velocity) {
         }
     }
     if (!v) {
+        /* Prefer a truly free voice before touching any sounding note. */
         for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
             if (!voices[i].active) { v = &voices[i]; break; }
         }
     }
     if (!v) {
+        /* Reclaim the oldest release-tail voice before stealing a held key. */
+        for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
+            if (voices[i].active && !voices[i].keyDown &&
+                (!v || voices[i].age < v->age)) {
+                v = &voices[i];
+            }
+        }
+    }
+    if (!v) {
+        /* All six voices are held: use oldest-note voice stealing. */
         v = &voices[0];
         for (unsigned i = 1; i < POLY8_VOICE_COUNT; ++i)
             if (voices[i].age < v->age) v = &voices[i];
