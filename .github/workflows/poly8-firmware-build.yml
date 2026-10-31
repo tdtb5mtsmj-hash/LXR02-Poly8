@@ -69,6 +69,16 @@ jobs:
               raise SystemExit(
                   f"Payload size mismatch: header={payload_size}, actual={len(payload)}"
               )
+          if payload_size == 0 or payload_size > 0xF8000:
+              raise SystemExit(f"Payload does not fit the STM32F765 application area: {payload_size}")
+          if payload_size % 4:
+              raise SystemExit(f"Payload size is not word-aligned: {payload_size}")
+          if len(payload) < 8:
+              raise SystemExit("Payload does not contain the complete vector table")
+          reset_vector = struct.unpack_from("<I", payload, 4)[0]
+          reset_address = reset_vector & ~1
+          if not (reset_vector & 1) or not (0x08008000 <= reset_address < 0x08100000):
+              raise SystemExit(f"Reset vector is outside the application flash: {reset_vector:#010x}")
           expected = 0xFF - (sum(payload) & 0xFF)
           if checksum != expected:
               raise SystemExit(
@@ -76,12 +86,14 @@ jobs:
               )
           print(f"Verified {image}: {payload_size} payload bytes, checksum {checksum:#04x}")
           PY
-          sha256sum build/release/LXR_V2_V1.7.img
+          sha256sum build/release/LXR_V2_V1.7.img | tee build/release/LXR_V2_V1.7.img.sha256
 
       - name: Upload verified firmware image
         uses: actions/upload-artifact@v4
         with:
           name: LXR_V2_V1.7-Poly8
-          path: lxr-desktop-app-main 4/build/release/LXR_V2_V1.7.img
+          path: |
+            lxr-desktop-app-main 4/build/release/LXR_V2_V1.7.img
+            lxr-desktop-app-main 4/build/release/LXR_V2_V1.7.img.sha256
           if-no-files-found: error
           retention-days: 14
