@@ -29,4 +29,6 @@ for name, value in constants.items():
 assert "(version >= 3 ? V3_GLOBAL_PARAM_COUNT : LEGACY_GLOBAL_PARAM_COUNT)" in preset
 assert "(version >= 3 ? V3_ALL_GLOBAL_BLOCK_SIZE : LEGACY_ALL_GLOBAL_BLOCK_SIZE)" in preset
 assert "activeParameters[PAR_POLY8_VOL] = 31;" in preset
+assert "const FRESULT readResult = f_read((FIL*)&SDFile, globalData, numGlobals, &bytesRead);" in preset
+assert "memcpy(&activeParameters[PAR_BEGINNING_OF_GLOBALS], globalData, numGlobals);" in preset
 print("Poly8 preset layout compatibility passed: v1/v2=38/64, v3=110/128, v4=134/160.")
