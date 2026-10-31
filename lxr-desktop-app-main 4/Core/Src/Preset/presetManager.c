@@ -974,6 +974,7 @@ static uint8_t preset_readGlobalDataCount(uint16_t numGlobals)
 {
 #if USE_SD_CARD
     UINT bytesRead = 0;
+    uint8_t globalData[NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS];
     const uint16_t currentGlobals = (uint16_t)(NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS);
     if (numGlobals > currentGlobals) return 0;
     if (numGlobals < currentGlobals) {
@@ -1013,8 +1014,12 @@ static uint8_t preset_readGlobalDataCount(uint16_t numGlobals)
             activeParameters[lfoBase + 3u] = 0;
         }
     }
-    f_read((FIL*)&SDFile, &activeParameters[PAR_BEGINNING_OF_GLOBALS], numGlobals, &bytesRead);
-    return (bytesRead == numGlobals);
+    const FRESULT readResult = f_read((FIL*)&SDFile, globalData, numGlobals, &bytesRead);
+    if (readResult != FR_OK || bytesRead != numGlobals)
+        return 0;
+
+    memcpy(&activeParameters[PAR_BEGINNING_OF_GLOBALS], globalData, numGlobals);
+    return 1;
 #else
     (void)numGlobals;
     return 0;
