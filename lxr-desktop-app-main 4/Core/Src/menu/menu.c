@@ -76,8 +76,9 @@ static void menu_applyPoly8Params(void)
 
     for (uint8_t voice = 0; voice < POLY8_VOICE_COUNT; ++voice) {
         const uint16_t *ids = poly8VoiceParamIds[voice];
+        /* Preserve the live hardware-fader gain when another parameter changes. */
+        Poly8_GetVoiceParams(voice, &p);
         p.waveform = menu_poly8Waveform(activeParameters[ids[0]]);
-        p.voiceLevel = 1.0f; /* The hardware fader is applied in the mixer. */
         p.attackSeconds = 0.001f * powf(10000.0f, (float)activeParameters[ids[1]] / 127.0f);
         p.decaySeconds = 0.001f * powf(10000.0f, (float)activeParameters[ids[2]] / 127.0f);
         p.sustain = (float)activeParameters[ids[3]] / 127.0f;
