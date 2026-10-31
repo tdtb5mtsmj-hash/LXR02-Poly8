@@ -49,20 +49,24 @@ uint8_t saveScreenPots[4]; //hold absolute pot position for save page name editi
 static uint8_t menu_lastPoly8Mode = 0xFF;
 
 static const uint16_t poly8VoiceParamIds[POLY8_VOICE_COUNT][12] = {
-    {PAR_POLY8_VOICE1_WAVE, PAR_POLY8_VOICE1_ATTACK, PAR_POLY8_VOICE1_DECAY, PAR_POLY8_VOICE1_SUSTAIN, PAR_POLY8_VOICE1_RELEASE, PAR_POLY8_VOICE1_CUTOFF, PAR_POLY8_VOICE1_RESO, PAR_POLY8_VOICE1_FM_AMOUNT, PAR_POLY8_VOICE1_FM_RATIO, PAR_POLY8_VOICE1_FM_WAVE, PAR_POLY8_VOICE1_PITCH_COARSE, PAR_POLY8_VOICE1_PITCH_FINE},
-    {PAR_POLY8_VOICE2_WAVE, PAR_POLY8_VOICE2_ATTACK, PAR_POLY8_VOICE2_DECAY, PAR_POLY8_VOICE2_SUSTAIN, PAR_POLY8_VOICE2_RELEASE, PAR_POLY8_VOICE2_CUTOFF, PAR_POLY8_VOICE2_RESO, PAR_POLY8_VOICE2_FM_AMOUNT, PAR_POLY8_VOICE2_FM_RATIO, PAR_POLY8_VOICE2_FM_WAVE, PAR_POLY8_VOICE2_PITCH_COARSE, PAR_POLY8_VOICE2_PITCH_FINE},
-    {PAR_POLY8_VOICE3_WAVE, PAR_POLY8_VOICE3_ATTACK, PAR_POLY8_VOICE3_DECAY, PAR_POLY8_VOICE3_SUSTAIN, PAR_POLY8_VOICE3_RELEASE, PAR_POLY8_VOICE3_CUTOFF, PAR_POLY8_VOICE3_RESO, PAR_POLY8_VOICE3_FM_AMOUNT, PAR_POLY8_VOICE3_FM_RATIO, PAR_POLY8_VOICE3_FM_WAVE, PAR_POLY8_VOICE3_PITCH_COARSE, PAR_POLY8_VOICE3_PITCH_FINE},
-    {PAR_POLY8_VOICE4_WAVE, PAR_POLY8_VOICE4_ATTACK, PAR_POLY8_VOICE4_DECAY, PAR_POLY8_VOICE4_SUSTAIN, PAR_POLY8_VOICE4_RELEASE, PAR_POLY8_VOICE4_CUTOFF, PAR_POLY8_VOICE4_RESO, PAR_POLY8_VOICE4_FM_AMOUNT, PAR_POLY8_VOICE4_FM_RATIO, PAR_POLY8_VOICE4_FM_WAVE, PAR_POLY8_VOICE4_PITCH_COARSE, PAR_POLY8_VOICE4_PITCH_FINE},
-    {PAR_POLY8_VOICE5_WAVE, PAR_POLY8_VOICE5_ATTACK, PAR_POLY8_VOICE5_DECAY, PAR_POLY8_VOICE5_SUSTAIN, PAR_POLY8_VOICE5_RELEASE, PAR_POLY8_VOICE5_CUTOFF, PAR_POLY8_VOICE5_RESO, PAR_POLY8_VOICE5_FM_AMOUNT, PAR_POLY8_VOICE5_FM_RATIO, PAR_POLY8_VOICE5_FM_WAVE, PAR_POLY8_VOICE5_PITCH_COARSE, PAR_POLY8_VOICE5_PITCH_FINE},
-    {PAR_POLY8_VOICE6_WAVE, PAR_POLY8_VOICE6_ATTACK, PAR_POLY8_VOICE6_DECAY, PAR_POLY8_VOICE6_SUSTAIN, PAR_POLY8_VOICE6_RELEASE, PAR_POLY8_VOICE6_CUTOFF, PAR_POLY8_VOICE6_RESO, PAR_POLY8_VOICE6_FM_AMOUNT, PAR_POLY8_VOICE6_FM_RATIO, PAR_POLY8_VOICE6_FM_WAVE, PAR_POLY8_VOICE6_PITCH_COARSE, PAR_POLY8_VOICE6_PITCH_FINE}
+    {PAR_POLY8_VOICE1_WAVE, PAR_POLY8_VOICE1_ATTACK, PAR_POLY8_VOICE1_DECAY, PAR_POLY8_VOICE1_SUSTAIN, PAR_POLY8_VOICE1_RELEASE, PAR_POLY8_VOICE1_CUTOFF, PAR_POLY8_VOICE1_RESO, PAR_POLY8_VOICE1_FM_AMOUNT, PAR_POLY8_VOICE1_FM_RATIO, PAR_POLY8_VOICE1_FM_WAVE, PAR_POLY8_VOICE1_PITCH_COARSE, PAR_POLY8_VOICE1_PITCH_FINE, PAR_POLY8_VOICE1_LFO_RATE, PAR_POLY8_VOICE1_LFO_AMOUNT, PAR_POLY8_VOICE1_LFO_WAVE, PAR_POLY8_VOICE1_LFO_TARGET},
+    {PAR_POLY8_VOICE2_WAVE, PAR_POLY8_VOICE2_ATTACK, PAR_POLY8_VOICE2_DECAY, PAR_POLY8_VOICE2_SUSTAIN, PAR_POLY8_VOICE2_RELEASE, PAR_POLY8_VOICE2_CUTOFF, PAR_POLY8_VOICE2_RESO, PAR_POLY8_VOICE2_FM_AMOUNT, PAR_POLY8_VOICE2_FM_RATIO, PAR_POLY8_VOICE2_FM_WAVE, PAR_POLY8_VOICE2_PITCH_COARSE, PAR_POLY8_VOICE2_PITCH_FINE, PAR_POLY8_VOICE2_LFO_RATE, PAR_POLY8_VOICE2_LFO_AMOUNT, PAR_POLY8_VOICE2_LFO_WAVE, PAR_POLY8_VOICE2_LFO_TARGET},
+    {PAR_POLY8_VOICE3_WAVE, PAR_POLY8_VOICE3_ATTACK, PAR_POLY8_VOICE3_DECAY, PAR_POLY8_VOICE3_SUSTAIN, PAR_POLY8_VOICE3_RELEASE, PAR_POLY8_VOICE3_CUTOFF, PAR_POLY8_VOICE3_RESO, PAR_POLY8_VOICE3_FM_AMOUNT, PAR_POLY8_VOICE3_FM_RATIO, PAR_POLY8_VOICE3_FM_WAVE, PAR_POLY8_VOICE3_PITCH_COARSE, PAR_POLY8_VOICE3_PITCH_FINE, PAR_POLY8_VOICE3_LFO_RATE, PAR_POLY8_VOICE3_LFO_AMOUNT, PAR_POLY8_VOICE3_LFO_WAVE, PAR_POLY8_VOICE3_LFO_TARGET},
+    {PAR_POLY8_VOICE4_WAVE, PAR_POLY8_VOICE4_ATTACK, PAR_POLY8_VOICE4_DECAY, PAR_POLY8_VOICE4_SUSTAIN, PAR_POLY8_VOICE4_RELEASE, PAR_POLY8_VOICE4_CUTOFF, PAR_POLY8_VOICE4_RESO, PAR_POLY8_VOICE4_FM_AMOUNT, PAR_POLY8_VOICE4_FM_RATIO, PAR_POLY8_VOICE4_FM_WAVE, PAR_POLY8_VOICE4_PITCH_COARSE, PAR_POLY8_VOICE4_PITCH_FINE, PAR_POLY8_VOICE4_LFO_RATE, PAR_POLY8_VOICE4_LFO_AMOUNT, PAR_POLY8_VOICE4_LFO_WAVE, PAR_POLY8_VOICE4_LFO_TARGET},
+    {PAR_POLY8_VOICE5_WAVE, PAR_POLY8_VOICE5_ATTACK, PAR_POLY8_VOICE5_DECAY, PAR_POLY8_VOICE5_SUSTAIN, PAR_POLY8_VOICE5_RELEASE, PAR_POLY8_VOICE5_CUTOFF, PAR_POLY8_VOICE5_RESO, PAR_POLY8_VOICE5_FM_AMOUNT, PAR_POLY8_VOICE5_FM_RATIO, PAR_POLY8_VOICE5_FM_WAVE, PAR_POLY8_VOICE5_PITCH_COARSE, PAR_POLY8_VOICE5_PITCH_FINE, PAR_POLY8_VOICE5_LFO_RATE, PAR_POLY8_VOICE5_LFO_AMOUNT, PAR_POLY8_VOICE5_LFO_WAVE, PAR_POLY8_VOICE5_LFO_TARGET},
+    {PAR_POLY8_VOICE6_WAVE, PAR_POLY8_VOICE6_ATTACK, PAR_POLY8_VOICE6_DECAY, PAR_POLY8_VOICE6_SUSTAIN, PAR_POLY8_VOICE6_RELEASE, PAR_POLY8_VOICE6_CUTOFF, PAR_POLY8_VOICE6_RESO, PAR_POLY8_VOICE6_FM_AMOUNT, PAR_POLY8_VOICE6_FM_RATIO, PAR_POLY8_VOICE6_FM_WAVE, PAR_POLY8_VOICE6_PITCH_COARSE, PAR_POLY8_VOICE6_PITCH_FINE, PAR_POLY8_VOICE6_LFO_RATE, PAR_POLY8_VOICE6_LFO_AMOUNT, PAR_POLY8_VOICE6_LFO_WAVE, PAR_POLY8_VOICE6_LFO_TARGET}
 };
 
 static Poly8Waveform menu_poly8Waveform(uint8_t value)
 {
-    if (value < 32) return POLY8_SAW;
-    if (value < 64) return POLY8_SQUARE;
-    if (value < 96) return POLY8_TRIANGLE;
-    return POLY8_SINE;
+    /* The dedicated Poly8 menu stores a real 0..3 enum, not a 0..127 bucket. */
+    switch (value) {
+    case 1: return POLY8_SQUARE;
+    case 2: return POLY8_TRIANGLE;
+    case 3: return POLY8_SINE;
+    case 0:
+    default: return POLY8_SAW;
+    }
 }
 
 static void menu_applyPoly8Params(void)
@@ -85,6 +89,10 @@ static void menu_applyPoly8Params(void)
         p.fmWaveform = menu_poly8Waveform(activeParameters[ids[9]]);
         p.pitchSemitones = ((float)activeParameters[ids[10]] - 64.0f) * (24.0f / 64.0f);
         p.fineCents = ((float)activeParameters[ids[11]] - 64.0f) * (100.0f / 64.0f);
+        p.lfoRateHz = 0.05f * powf(400.0f, (float)activeParameters[ids[12]] / 127.0f);
+        p.lfoAmount = (float)activeParameters[ids[13]] / 127.0f;
+        p.lfoWaveform = (uint8_t)menu_poly8Waveform(activeParameters[ids[14]]);
+        p.lfoTarget = activeParameters[ids[15]] <= 2u ? activeParameters[ids[15]] : 0u;
         p.masterLevel = Poly8_GetMasterLevel();
         Poly8_SetVoiceParams(voice, &p);
     }
@@ -626,7 +634,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
 		/*PAR_PATTERN_MODE*/ DTYPE_MENU | (MENU_PAT_MODE<<8),
         /* Poly8 synthesizer parameters */
-        /*PAR_POLY8_WAVE*/    DTYPE_0B127,
+        /*PAR_POLY8_WAVE*/    DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOL*/     DTYPE_0B127,
         /*PAR_POLY8_ATTACK*/  DTYPE_0B127,
         /*PAR_POLY8_DECAY*/   DTYPE_0B127,
@@ -634,7 +642,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_RELEASE*/ DTYPE_0B127,
         /*PAR_POLY8_CUTOFF*/  DTYPE_0B127,
         /*PAR_POLY8_RESO*/    DTYPE_0B127,
-        /*PAR_POLY8_VOICE1_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE1_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE1_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_SUSTAIN*/ DTYPE_0B127,
@@ -643,10 +651,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE1_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE1_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE1_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE1_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE2_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE2_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE2_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_SUSTAIN*/ DTYPE_0B127,
@@ -655,10 +663,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE2_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE2_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE2_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE2_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE3_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE3_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE3_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_SUSTAIN*/ DTYPE_0B127,
@@ -667,10 +675,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE3_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE3_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE3_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE3_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE4_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE4_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE4_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_SUSTAIN*/ DTYPE_0B127,
@@ -679,10 +687,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE4_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE4_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE4_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE4_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE5_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE5_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE5_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_SUSTAIN*/ DTYPE_0B127,
@@ -691,10 +699,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE5_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE5_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE5_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE5_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE6_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE6_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE6_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_SUSTAIN*/ DTYPE_0B127,
@@ -703,10 +711,35 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE6_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE6_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE6_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE6_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_PITCH_FINE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE1_LFO_RATE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE1_LFO_AMOUNT*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE1_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
+        /*PAR_POLY8_VOICE1_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE2_LFO_RATE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE2_LFO_AMOUNT*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE2_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
+        /*PAR_POLY8_VOICE2_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE3_LFO_RATE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE3_LFO_AMOUNT*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE3_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
+        /*PAR_POLY8_VOICE3_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE4_LFO_RATE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE4_LFO_AMOUNT*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE4_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
+        /*PAR_POLY8_VOICE4_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE5_LFO_RATE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE5_LFO_AMOUNT*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE5_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
+        /*PAR_POLY8_VOICE5_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE6_LFO_RATE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE6_LFO_AMOUNT*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE6_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
+        /*PAR_POLY8_VOICE6_LFO_TARGET*/ DTYPE_0B15,
 };
+
 
 
 
@@ -1531,9 +1564,20 @@ static void menu_repaintLoadSavePage()
 	}
 }
 //-----------------------------------------------------------------
+static const Page *menu_getPageDefinition(uint8_t subPage)
+{
+    if (menu_activePage < POLY8_MENU_VOICE_COUNT &&
+        activeParameters[PAR_MIDI_MODE] != 0) {
+        if (subPage >= POLY8_VOICE_MENU_PAGES)
+            subPage = 0;
+        return &poly8VoicePages[menu_activePage][subPage];
+    }
+    return &menuPages[menu_activePage][subPage];
+}
+
 static uint8_t has2ndPage(uint8_t menuPage)
 {
-	const uint8_t textType = pgm_read_byte(&menuPages[menu_activePage][menuPage].top1 + 4);
+	const uint8_t textType = pgm_read_byte(&menu_getPageDefinition(menuPage)->top1 + 4);
 	if(textType != TEXT_EMPTY)
 	{
 		return 1;
@@ -1664,7 +1708,7 @@ void menu_repaintGeneric()
 	uint8_t curParmVal;
 
 	// the active page
-	const Page *ap=&menuPages[menu_activePage][activePage];
+	const Page *ap=menu_getPageDefinition(activePage);
 
 	if(editModeActive) //show single parameter with full name
 	{
@@ -1728,7 +1772,9 @@ void menu_repaintGeneric()
 				break;
 				*/
 			case DTYPE_ON_OFF: //switch(parameters_dtypes[parNr] & 0x0F)
-				if(curParmVal == 1)
+				if (parNr == PAR_MIDI_MODE)
+					memcpy(&editDisplayBuffer[1][13], curParmVal ? "PLY" : "DRU", 3);
+				else if(curParmVal == 1)
 					memcpy(&editDisplayBuffer[1][13],menuText_on,3);
 				else
 					memcpy(&editDisplayBuffer[1][13],menuText_off,3);
@@ -1887,7 +1933,9 @@ void menu_repaintGeneric()
 					break;
 					*/
 				case DTYPE_ON_OFF: //switch(parameters[parNr].dtype&0x0F)
-					if(curParmVal == 1)
+					if (parNr == PAR_MIDI_MODE)
+						memcpy(valueAsText, curParmVal ? "PLY" : "DRU", 3);
+					else if(curParmVal == 1)
 						memcpy(valueAsText,menuText_on,3);
 					else
 						memcpy(valueAsText,menuText_off,3);
@@ -2712,6 +2760,8 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 		return nextPatternNames[0][0];
 	case MENU_WAVEFORM:
 		return (uint8_t)(waveformNames[0][0] + menu_numSamples);
+	case MENU_POLY8_WAVE:
+		return poly8WaveNames[0][0];
 	case MENU_ROLL_RATES:
 		return rollRateNames[0][0];
 	case MENU_MIDI_ROUTING:
@@ -2772,6 +2822,9 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 		break;
 	case MENU_FILTER:
 		p = filterTypes[curParmVal + 1];
+		break;
+	case MENU_POLY8_WAVE:
+		p = poly8WaveNames[(curParmVal < poly8WaveNames[0][0] ? curParmVal : 0) + 1];
 		break;
 	case MENU_WAVEFORM:
 		if(curParmVal < waveformNames[0][0])
@@ -2984,7 +3037,7 @@ static void menu_encoderChangeParameter(int8_t inc)
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 
 	//get address from top1-8 from activeParameter (base adress top1 + offset)
-	uint16_t paramNr		= pgm_read_word(&menuPages[menu_activePage][activePage].bot1 + activeParameter);
+	uint16_t paramNr		= pgm_read_word(&menu_getPageDefinition(activePage)->bot1 + activeParameter);
 	//uint8_t *paramValue = &mainParameters[paramNr];
 	uint8_t *paramValue;
 
@@ -3222,7 +3275,7 @@ checkvalid:
 	}
 
 	// read the new param
-	param = pgm_read_byte(&menuPages[menu_activePage][activePage].top1 + activeParameter);
+	param = pgm_read_byte(&menu_getPageDefinition(activePage)->top1 + activeParameter);
 	if(param == TEXT_SKIP) {
 		if(allowedSkips--) // skip this one and check the next
 			goto checkvalid;
@@ -3307,6 +3360,8 @@ void menu_switchSubPage(uint8_t subPageNr, uint8_t toggle)
 	uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
     const uint8_t numSubPages = (menu_activePage == SEQ_PAGE) ? NUM_SEQ_SUB_PAGES : NUM_SUB_PAGES;
+	if (menu_activePage < POLY8_MENU_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0 && subPageNr >= POLY8_VOICE_MENU_PAGES)
+		subPageNr = 0;
 
 	if((toggle) && (subPageNr == activePage)) { // toggle only
 		// we are toggling to next screen, or back to first
@@ -3314,6 +3369,12 @@ void menu_switchSubPage(uint8_t subPageNr, uint8_t toggle)
 			// toggle to next if possible
 			if(has2ndPage(activePage))
 				activeParameter=4;
+			else if (menu_activePage < POLY8_MENU_VOICE_COUNT &&
+			         activeParameters[PAR_MIDI_MODE] != 0) {
+				/* In Poly8, repeated page-toggle presses cycle OSC/ENV/FILTER/FM/PITCH. */
+				activePage = (uint8_t)((activePage + 1u) % POLY8_VOICE_MENU_PAGES);
+				activeParameter = 0;
+			}
 			else if(menu_activePage == MENU_MIDI_PAGE && activePage >= 2) {
                 /* Poly8's compact FM/pitch page has four controls; toggle advances. */
                 if (activePage < numSubPages - 1 &&
@@ -3519,6 +3580,9 @@ void menu_switchPage(uint8_t pageNr)
 	default: //voice pages etc
 	{
 		menu_activePage = pageNr;
+		if (pageNr < POLY8_MENU_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0) {
+			menuIndex = 0;
+		}
 		if(pageNr<7) {
 			menu_setActiveVoice(pageNr);
 		}
@@ -3572,7 +3636,7 @@ void menu_sendAllGlobals()
 // This includes values for the currently active step in the sequencer
 void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 {
-    if (paramNr >= PAR_POLY8_VOICE1_WAVE && paramNr <= PAR_POLY8_VOICE6_PITCH_FINE) {
+    if (paramNr >= PAR_POLY8_VOICE1_WAVE && paramNr <= PAR_POLY8_VOICE6_LFO_TARGET) {
         menu_applyPoly8Params();
         return;
     }
@@ -3586,6 +3650,9 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		if (menu_lastPoly8Mode != (value ? 1u : 0u)) {
 			Poly8_AllNotesOff();
 			menu_lastPoly8Mode = value ? 1u : 0u;
+			/* Load the stored six-voice patch when entering Poly8 mode. */
+			if (value)
+				menu_applyPoly8Params();
 		}
 		break;
 
@@ -4072,7 +4139,7 @@ uint8_t menu_getDisplayParameterType(uint8_t pos)
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t isOn2ndPage		= ( activeParameter > 3) * 4;
-	uint16_t paramNr				= pgm_read_word(&menuPages[menu_activePage][activePage].bot1 +
+	uint16_t paramNr				= pgm_read_word(&menu_getPageDefinition(activePage)->bot1 +
 			pos + isOn2ndPage);
 
 	return parameter_dtypes[paramNr] & 0xFF;
@@ -4091,7 +4158,7 @@ uint8_t menu_parseKnobValue(uint8_t potNr, int16_t diff)
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t isOn2ndPage		= ( activeParameter > 3) * 4;
-	uint16_t paramNr				= pgm_read_word(&menuPages[menu_activePage][activePage].bot1 +
+	uint16_t paramNr				= pgm_read_word(&menu_getPageDefinition(activePage)->bot1 +
 										potNr + isOn2ndPage);
 
 	//-------------------------------------------------

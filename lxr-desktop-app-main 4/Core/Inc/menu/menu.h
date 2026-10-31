@@ -28,7 +28,9 @@
 //-----------------------------------------------------------------
 //#define NUM_PAGES 12		
 #define NUM_SUB_PAGES 14	// global menu: 2 base pages + 2 pages for each Poly8 voice
-#define NUM_SEQ_SUB_PAGES 8	// keep the sequencer menu at its original page count 
+#define NUM_SEQ_SUB_PAGES 8	// keep the sequencer menu at its original page count
+#define POLY8_MENU_VOICE_COUNT 6	// Poly8 has six independently editable voices
+#define POLY8_VOICE_MENU_PAGES 6	// OSC, ENV, FILTER, FM, PITCH and LFO/MOD 
 #define MASK_PARAMETER 0x07
 
 #define MASK_PAGE 0xf8
@@ -234,7 +236,7 @@ enum NamesEnum
 	TEXT_POS_Y,						//70
 	TEXT_FLUX,
 	TEXT_SOM_FREQ,
-	TEXT_MIDI_MODE,	// This is now unused
+	TEXT_MIDI_MODE,	// OFF=Drum, ON=Poly8
 	TEXT_MIDI_ROUTING,
 	TEXT_MIDI_FILT_TX,
 	TEXT_MIDI_FILT_RX,

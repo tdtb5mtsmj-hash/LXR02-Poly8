@@ -1,6 +1,7 @@
 LXR-02 Poly8 — integration status (stage 4, 2026-10-31)
 
 Implemented in this source tree:
+- Poly8 uses six MIDI note slots driving six independently controlled oscillator layers (up to 36 note/layer DSP paths). A single oscillator layer can play a six-note chord.
 - Six-slot Poly8 DSP engine is included in Core/CMakeLists.txt.
 - MIDI Note On / Note Off are routed to Poly8 when PAR_MIDI_MODE is ON; OFF retains original drum MIDI routing.
 - PAR_MIDI_MODE is exposed as an ON/OFF mode switch: OFF = Drum, ON = Poly8.
@@ -9,8 +10,9 @@ Implemented in this source tree:
 - Hardware faders 1..6 independently control the six Poly8 voice levels.
 - Master level is controlled by PAR_POLY8_VOL in the global menu; the hardware layout
   exposes six physical faders, not a seventh master fader.
-- Each voice has its own menu bank with independent waveform, ADSR, filter cutoff,
-  resonance, FM amount, FM ratio, FM waveform, coarse pitch and fine pitch.
+- Each oscillator layer has its own menu bank with independent waveform, ADSR, filter cutoff,
+  resonance, FM amount, FM ratio, FM waveform, coarse/fine pitch and LFO/MOD controls.
+- LFO/MOD controls include rate, depth, waveform and destination (pitch, cutoff or FM amount).
 - The global menu has 14 subpages: the original two global pages plus two pages
   per Poly8 voice. Sequencer menu navigation retains its original 8-page limit.
 - Voice pitch ratio is cached when parameters change, not calculated every sample.
@@ -22,6 +24,7 @@ Implemented in this source tree:
 
 Validation performed here:
 - Poly8Engine.c compiles with host GCC using -std=c11 -Wall -Wextra -Werror.
+- CI includes a host DSP smoke test for a six-note chord through one oscillator layer and finite LFO output.
 - Six-voice DSP smoke test passed with distinct FM amounts, FM ratios and pitch
   offsets; non-zero audio output was confirmed.
 - Clang syntax checks passed for menu.c, presetManager.c, mixer.c and

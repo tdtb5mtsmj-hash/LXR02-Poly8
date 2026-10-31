@@ -48,10 +48,11 @@ char currentFolder[13];
 //char currentName[8];
 //uint8_t activePresetNr = 0;
 
-#define FILE_VERSION 3
+#define FILE_VERSION 4
 #define LEGACY_GLOBAL_PARAM_COUNT 38u
 #define LEGACY_ALL_GLOBAL_BLOCK_SIZE 64u
-#define CURRENT_ALL_GLOBAL_BLOCK_SIZE 128u
+#define V3_ALL_GLOBAL_BLOCK_SIZE 128u
+#define CURRENT_ALL_GLOBAL_BLOCK_SIZE 160u
 
 /*
 #define NUM_TRACKS 7
@@ -990,6 +991,11 @@ static uint8_t preset_readGlobalDataCount(uint16_t numGlobals)
             activeParameters[base + 9u] = 96;
             activeParameters[base + 10u] = 64;
             activeParameters[base + 11u] = 64;
+            const uint16_t lfoBase = (uint16_t)(PAR_POLY8_VOICE1_LFO_RATE + voice * 4u);
+            activeParameters[lfoBase + 0u] = 32;
+            activeParameters[lfoBase + 1u] = 0;
+            activeParameters[lfoBase + 2u] = 0;
+            activeParameters[lfoBase + 3u] = 0;
         }
     }
     f_read((FIL*)&SDFile, &activeParameters[PAR_BEGINNING_OF_GLOBALS], numGlobals, &bytesRead);
@@ -1178,6 +1184,30 @@ void preset_loadDefaultGlobals()
 	activeParameters[PAR_POLY8_VOICE6_FM_WAVE] = 96;
 	activeParameters[PAR_POLY8_VOICE6_PITCH_COARSE] = 64;
 	activeParameters[PAR_POLY8_VOICE6_PITCH_FINE] = 64;
+	activeParameters[PAR_POLY8_VOICE1_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE1_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE1_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE1_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE2_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE2_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE2_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE2_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE3_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE3_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE3_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE3_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE4_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE4_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE4_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE4_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE5_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE5_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE5_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE5_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE6_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE6_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE6_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE6_LFO_TARGET] = 0;
 
     // Apply default parameters to the sound engine.
     menu_sendAllGlobals();
@@ -2618,7 +2648,7 @@ FRESULT preset_saveProject(uint8_t presetNr)
 		// write global settings
 		preset_writeGlobalData();
 
-		// v3 reserves 128 bytes for globals, enough for the six Poly8 voice banks.
+		// v4 reserves 160 bytes for globals, including six Poly8 LFO/MOD banks.
 		remain = (uint16_t)(CURRENT_ALL_GLOBAL_BLOCK_SIZE - (NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS));
 
 	} else {
@@ -3041,14 +3071,18 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 		goto closeFile;
 
 	if(isAll){
-		// v1/v2 contain the original 38 globals; v3 adds six Poly8 voice banks.
-		const uint16_t globalBytes = (version >= 3)
-		    ? (uint16_t)(NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS)
-		    : (uint16_t)LEGACY_GLOBAL_PARAM_COUNT;
+		// v1/v2 contain 38 globals; v3 contains 128 bytes; v4 includes Poly8 LFO/MOD.
+		const uint16_t currentGlobals = (uint16_t)(NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS);
+		const uint16_t globalBytes = (version >= 4)
+		    ? currentGlobals
+		    : (version >= 3 ? V3_ALL_GLOBAL_BLOCK_SIZE : LEGACY_GLOBAL_PARAM_COUNT);
 		if(!preset_readGlobalDataCount(globalBytes))
 			goto closeFile;
-		// Keep the historical 16-bit padding calculation for file compatibility.
-		remain = (uint16_t)((version >= 3 ? CURRENT_ALL_GLOBAL_BLOCK_SIZE : LEGACY_ALL_GLOBAL_BLOCK_SIZE) - globalBytes);
+		// Preserve each historical block size so following pattern data stays aligned.
+		const uint16_t globalBlockSize = (version >= 4)
+		    ? CURRENT_ALL_GLOBAL_BLOCK_SIZE
+		    : (version >= 3 ? V3_ALL_GLOBAL_BLOCK_SIZE : LEGACY_ALL_GLOBAL_BLOCK_SIZE);
+		remain = (uint16_t)(globalBlockSize - globalBytes);
 
 	} else {
 		// read bpm
