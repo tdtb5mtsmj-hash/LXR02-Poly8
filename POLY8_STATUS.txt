@@ -1,0 +1,39 @@
+LXR-02 Poly8 — integration status (stage 4, 2026-10-31)
+
+Implemented in this source tree:
+- Six-slot Poly8 DSP engine is included in Core/CMakeLists.txt.
+- MIDI Note On / Note Off are routed to Poly8 when PAR_MIDI_MODE is ON; OFF retains original drum MIDI routing.
+- PAR_MIDI_MODE is exposed as an ON/OFF mode switch: OFF = Drum, ON = Poly8.
+- Changing modes sends Poly8_AllNotesOff() to prevent held notes/envelopes from becoming stale.
+- Poly8 audio is rendered into the existing mixer output path in MIDI mode 2.
+- Hardware faders 1..6 independently control the six Poly8 voice levels.
+- Master level is controlled by PAR_POLY8_VOL in the global menu; the hardware layout
+  exposes six physical faders, not a seventh master fader.
+- Each voice has its own menu bank with independent waveform, ADSR, filter cutoff,
+  resonance, FM amount, FM ratio, FM waveform, coarse pitch and fine pitch.
+- The global menu has 14 subpages: the original two global pages plus two pages
+  per Poly8 voice. Sequencer menu navigation retains its original 8-page limit.
+- Voice pitch ratio is cached when parameters change, not calculated every sample.
+- Per-voice parameters are stored in the global parameter block. glo.cfg reads
+  both legacy and extended file sizes. ALL files are version 3 with a 128-byte
+  global block; version 1/2 ALL files remain readable using their original
+  38-byte global data and 64-byte reserved block.
+- Existing MIDI note allocation and note-off behavior are preserved.
+
+Validation performed here:
+- Poly8Engine.c compiles with host GCC using -std=c11 -Wall -Wextra -Werror.
+- Six-voice DSP smoke test passed with distinct FM amounts, FM ratios and pitch
+  offsets; non-zero audio output was confirmed.
+- Clang syntax checks passed for menu.c, presetManager.c, mixer.c and
+  Soundengine.c. Warnings reported are pre-existing unused parameters/functions
+  and comparison-parentheses warnings, not syntax errors.
+- CMake configure was attempted after removing the stale build cache. It stops
+  because arm-none-eabi-gcc is not installed in this environment.
+
+Not yet completed:
+- Full STM32F765 release build and final .img generation.
+- Hardware validation on an LXR-02 device.
+
+Do not flash a source ZIP or an unbuilt file. Only install the LXR_V2_V1.7.img
+created by a successful STM32 release build and verified with the LXRV2IMG
+header and checksum.
