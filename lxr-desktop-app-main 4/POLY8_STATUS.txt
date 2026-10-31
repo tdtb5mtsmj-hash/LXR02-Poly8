@@ -7,7 +7,7 @@ Implemented in this source tree:
 - PAR_MIDI_MODE is exposed as an ON/OFF mode switch: OFF = Drum, ON = Poly8.
 - Changing modes sends Poly8_AllNotesOff() to prevent held notes/envelopes from becoming stale.
 - Poly8 audio is rendered into the existing mixer output path in MIDI mode 2.
-- Hardware faders 1..6 independently control the six Poly8 voice levels.
+- Hardware faders 1..6 independently control the six Poly8 oscillator-layer levels. Their gains are applied before summing; the master gain is applied after summing.
 - Master level is controlled by PAR_POLY8_VOL in the global menu; the hardware layout
   exposes six physical faders, not a seventh master fader.
 - Each oscillator layer has its own menu bank with independent waveform, ADSR, filter cutoff,
@@ -24,7 +24,9 @@ Implemented in this source tree:
 
 Validation performed here:
 - Poly8Engine.c compiles with host GCC using -std=c11 -Wall -Wextra -Werror.
-- CI includes a host DSP smoke test for a six-note chord through one oscillator layer and finite LFO output.
+- CI host DSP smoke test covers six-note polyphony, linear response of each individual fader, independent master gain, all-muted silence, LFO output and the full 36-path load.
+- DSP gain normalization is fixed by the six-note polyphony headroom factor; it is not divided by the sum of fader values, so lowering one layer cannot be cancelled by automatic normalization.
+- Poly8 LFO destinations are named in the menu: Pit, Cut and FM.
 - Six-voice DSP smoke test passed with distinct FM amounts, FM ratios and pitch
   offsets; non-zero audio output was confirmed.
 - Clang syntax checks passed for menu.c, presetManager.c, mixer.c and
@@ -40,3 +42,11 @@ Not yet completed:
 Do not flash a source ZIP or an unbuilt file. Only install the LXR_V2_V1.7.img
 created by a successful STM32 release build and verified with the LXRV2IMG
 header and checksum.
+
+
+Final hardening candidate (2026-10-31):
+- GitHub Actions run #58 completed successfully: host DSP smoke test, STM32F765 release build, IMG validation and artifact upload.
+- Release IMG payload: 292240 bytes; image file: 292256 bytes; payload is 4-byte aligned and fits the 992 KiB application region.
+- The image verifier checks LXRV2IMG magic, exact payload length, 8-bit checksum, application reset-vector range and word alignment. CI also publishes a SHA-256 sidecar.
+- Verified release-image SHA-256: 371c9dab8f8c160442bcf5c0a20e3efb99d7618ef5a125686b09a5aeb17ae35d.
+- Physical LXR-02 audio, MIDI, controls and SD-card installation tests have not been performed. The separately audited official bootloader remains unchanged; do not treat this candidate as hardware-validated until tested with a recovery method available.
