@@ -37,7 +37,7 @@ typedef struct {
     Poly8Waveform fmWaveform;
     float lfoRateHz;      /* per-layer LFO rate, 0.05..20 Hz */
     float lfoAmount;      /* per-layer LFO depth, 0..1 */
-    uint8_t lfoWaveform;  /* 0=sine, 1=triangle, 2=saw, 3=square */
+    uint8_t lfoWaveform;  /* 0=saw, 1=square, 2=triangle, 3=sine */
     uint8_t lfoTarget;    /* 0=pitch, 1=cutoff, 2=FM amount */
     float masterLevel;    /* used by the legacy Poly8_SetParams API */
 } Poly8Params;
