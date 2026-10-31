@@ -11,6 +11,7 @@
 #define P8_PI 3.14159265358979323846f
 #define P8_TWO_PI (2.0f * P8_PI)
 #define P8_FM_MAX_INDEX 8.0f
+#define P8_POLYPHONY_GAIN 0.4082482905f /* 1/sqrt(6): fixed headroom, independent of fader positions */
 
 typedef enum { ENV_OFF, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE } EnvStage;
 
@@ -256,13 +257,16 @@ static float renderOscillator(uint8_t slotIndex, uint8_t section) {
     const Poly8Params *p = &voiceParams[section];
     if (!note->active || state->stage == ENV_OFF) return 0.0f;
 
-    state->lfoPhase += p->lfoRateHz / sampleRate;
-    if (state->lfoPhase >= 1.0f) state->lfoPhase -= floorf(state->lfoPhase);
-    const float lfo = oscillator((Poly8Waveform)p->lfoWaveform, state->lfoPhase)
-        * p->lfoAmount;
+    const uint8_t lfoEnabled = (p->lfoAmount > 0.0001f);
+    float lfo = 0.0f;
+    if (lfoEnabled) {
+        state->lfoPhase += p->lfoRateHz / sampleRate;
+        if (state->lfoPhase >= 1.0f) state->lfoPhase -= floorf(state->lfoPhase);
+        lfo = oscillator((Poly8Waveform)p->lfoWaveform, state->lfoPhase) * p->lfoAmount;
+    }
 
     float hz = noteFrequencies[note->note] * pitchRatio[section];
-    if (p->lfoTarget == 0u)
+    if (lfoEnabled && p->lfoTarget == 0u)
         hz *= powf(2.0f, lfo); /* +/- one octave at full depth */
     hz = clampf(hz, 1.0f, sampleRate * 0.45f);
     state->phase += hz / sampleRate;
@@ -271,20 +275,23 @@ static float renderOscillator(uint8_t slotIndex, uint8_t section) {
     if (state->modPhase >= 1.0f) state->modPhase -= floorf(state->modPhase);
 
     const float envelope = envStep(state, p);
-    float modWave = p->fmWaveform == POLY8_SINE
-        ? sinf(P8_TWO_PI * state->modPhase)
-        : oscillator(p->fmWaveform, state->modPhase);
     float fmAmount = p->fmAmount;
-    if (p->lfoTarget == 2u)
+    if (lfoEnabled && p->lfoTarget == 2u)
         fmAmount = clampf(fmAmount + lfo * 0.5f, 0.0f, 1.0f);
-    const float modulation = modWave * (fmAmount * P8_FM_MAX_INDEX);
+    float modulation = 0.0f;
+    if (fmAmount > 0.0001f) {
+        const float modWave = p->fmWaveform == POLY8_SINE
+            ? sinf(P8_TWO_PI * state->modPhase)
+            : oscillator(p->fmWaveform, state->modPhase);
+        modulation = modWave * (fmAmount * P8_FM_MAX_INDEX);
+    }
     float carrierPhase = state->phase + modulation / P8_TWO_PI;
     carrierPhase -= floorf(carrierPhase);
 
     const float input = oscillator(p->waveform, carrierPhase)
         - p->resonance * 0.9f * (state->filter1 - state->filter2);
     float g = filterG[section];
-    if (p->lfoTarget == 1u) {
+    if (lfoEnabled && p->lfoTarget == 1u) {
         const float modulatedCutoff = clampf(p->cutoffHz * powf(2.0f, lfo * 3.0f),
             20.0f, sampleRate * 0.42f);
         g = 1.0f - expf(-P8_TWO_PI * modulatedCutoff / sampleRate);
@@ -298,11 +305,8 @@ static float renderOscillator(uint8_t slotIndex, uint8_t section) {
 
 float Poly8_RenderSample(void) {
     float mix = 0.0f;
-    float sectionGainSum = 0.0f;
-    for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section)
-        sectionGainSum += voiceParams[section].voiceLevel;
 
-    /* Six MIDI notes x six oscillator sections = 36 independently phased paths. */
+    /* Six MIDI note slots x six oscillator sections = 36 independently phased paths. */
     for (uint8_t slot = 0; slot < POLY8_VOICE_COUNT; ++slot) {
         if (!noteSlots[slot].active) continue;
         uint8_t anySectionActive = 0;
@@ -314,9 +318,14 @@ float Poly8_RenderSample(void) {
         if (!anySectionActive)
             noteSlots[slot].active = 0;
     }
-    /* Normalize by the enabled layer gains so opening more layers does not clip. */
-    if (sectionGainSum < 0.0001f) return 0.0f;
-    return clampf(mix * masterLevel * 0.32f / sectionGainSum, -1.0f, 1.0f);
+
+    /*
+     * Apply each section's fader gain inside renderOscillator(), then apply
+     * the master gain here. Do not divide by the sum of fader levels: doing so
+     * cancels a single active fader (e.g. 0.25 and 1.0 produce the same level).
+     * Fixed six-note headroom keeps fader response linear and predictable.
+     */
+    return clampf(mix * masterLevel * 0.32f * P8_POLYPHONY_GAIN, -1.0f, 1.0f);
 }
 
 void Poly8_RenderBlock(int16_t *buffer, uint16_t count) {
