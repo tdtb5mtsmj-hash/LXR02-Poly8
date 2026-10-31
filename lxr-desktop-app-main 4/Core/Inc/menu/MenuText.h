@@ -43,6 +43,7 @@
 #define MENU_STEP_FLAM	 	24
 #define MENU_STEP_SHIFT	 	25
 #define MENU_AUDIO_OUT_FX	26
+#define MENU_POLY8_WAVE	27
 
 //-----------------------------------------------------------------
 // Shared texts. Reduce mem usage by pooling common text
@@ -306,6 +307,16 @@ const char waveformNames[][4]  =
 	{"Noi"}	,
 	{"PWM"}	,
 
+};
+
+// Four native waveforms supported by the Poly8 oscillator.
+const char poly8WaveNames[][4] =
+{
+	{4},
+	{"Saw"},
+	{"Squ"},
+	{"Tri"},
+	{"Sin"},
 };
 //-----------------------------------------------------------------
 const char outputNames[][7]  =
