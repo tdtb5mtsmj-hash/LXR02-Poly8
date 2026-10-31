@@ -73,7 +73,7 @@ int main(void) {
     Poly8_SetVoiceParams(0, &p);
     Poly8_GetVoiceParams(0, &p);
     if (fabsf(p.voiceLevel - 0.25f) > 0.0001f) {
-        fprintf(stderr, "parameter update changed hardware fader gain (%g)\\n", p.voiceLevel);
+        fprintf(stderr, "parameter update changed hardware fader gain (%g)\n", p.voiceLevel);
         return 7;
     }
 
