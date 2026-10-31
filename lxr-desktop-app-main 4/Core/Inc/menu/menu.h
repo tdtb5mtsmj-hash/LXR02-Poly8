@@ -28,7 +28,8 @@
 //-----------------------------------------------------------------
 //#define NUM_PAGES 12		
 #define NUM_SUB_PAGES 14	// global menu: 2 base pages + 2 pages for each Poly8 voice
-#define NUM_SEQ_SUB_PAGES 8	// keep the sequencer menu at its original page count 
+#define NUM_SEQ_SUB_PAGES 8	// keep the sequencer menu at its original page count
+#define POLY8_VOICE_MENU_PAGES 5	// OSC, ENV, FILTER, FM and PITCH 
 #define MASK_PARAMETER 0x07
 
 #define MASK_PAGE 0xf8
