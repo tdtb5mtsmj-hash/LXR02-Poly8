@@ -1,0 +1,185 @@
+/*
+ * Poly8Engine.c
+ * Experimental 6-voice standalone DSP prototype. Integration into the actual LXR-02
+ * audio callback/MIDI/UI is intentionally not performed in this first patch.
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+#include "Soundengine/DSPAudio/Poly8Engine.h"
+#include <math.h>
+#include <stddef.h>
+#include <string.h>
+
+#define P8_PI 3.14159265358979323846f
+#define P8_TWO_PI (2.0f * P8_PI)
+
+typedef enum { ENV_OFF, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE } EnvStage;
+
+typedef struct {
+    uint8_t active, keyDown, note, velocity;
+    uint32_t age;
+    float phase, env, releaseStart;
+    float filter1, filter2;
+    EnvStage stage;
+} Poly8Voice;
+
+static Poly8Voice voices[POLY8_VOICE_COUNT];
+static Poly8Params params;
+static float sampleRate = 44140.0f;
+static uint32_t ageCounter;
+static float noteFrequencies[128];
+static float filterG;
+
+
+static float clampf(float x, float lo, float hi) {
+    return x < lo ? lo : (x > hi ? hi : x);
+}
+
+static float noteHz(uint8_t note) {
+    return 440.0f * powf(2.0f, ((float)note - 69.0f) / 12.0f);
+}
+
+static void updateFilterCoefficient(void) {
+    float cutoff = clampf(params.cutoffHz, 20.0f, sampleRate * 0.42f);
+    filterG = 1.0f - expf(-P8_TWO_PI * cutoff / sampleRate);
+}
+
+void Poly8_Init(float sr) {
+    memset(voices, 0, sizeof(voices));
+    sampleRate = (sr > 8000.0f && sr < 192000.0f) ? sr : 44140.0f;
+    ageCounter = 0;
+    params.waveform = POLY8_SAW;
+    params.masterLevel = 0.12f;
+    params.attackSeconds = 0.008f;
+    params.decaySeconds = 0.12f;
+    params.sustain = 0.72f;
+    params.releaseSeconds = 0.18f;
+    params.cutoffHz = 8000.0f;
+    params.resonance = 0.12f;
+    for (unsigned i = 0; i < 128; ++i)
+        noteFrequencies[i] = noteHz((uint8_t)i);
+    updateFilterCoefficient();
+}
+
+void Poly8_SetParams(const Poly8Params *p) {
+    if (!p) return;
+    params = *p;
+    if (params.waveform > POLY8_TRIANGLE) params.waveform = POLY8_SAW;
+    params.masterLevel = clampf(params.masterLevel, 0.0f, 0.5f);
+    params.attackSeconds = clampf(params.attackSeconds, 0.001f, 10.0f);
+    params.decaySeconds = clampf(params.decaySeconds, 0.001f, 10.0f);
+    params.sustain = clampf(params.sustain, 0.0f, 1.0f);
+    params.releaseSeconds = clampf(params.releaseSeconds, 0.001f, 10.0f);
+    params.cutoffHz = clampf(params.cutoffHz, 20.0f, sampleRate * 0.42f);
+    params.resonance = clampf(params.resonance, 0.0f, 0.8f);
+    updateFilterCoefficient();
+}
+
+void Poly8_NoteOn(uint8_t note, uint8_t velocity) {
+    if (velocity == 0) { Poly8_NoteOff(note); return; }
+    Poly8Voice *v = NULL;
+    for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
+        if (voices[i].active && voices[i].keyDown && voices[i].note == note) {
+            v = &voices[i]; break;
+        }
+    }
+    if (!v) {
+        for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
+            if (!voices[i].active) { v = &voices[i]; break; }
+        }
+    }
+    if (!v) {
+        v = &voices[0];
+        for (unsigned i = 1; i < POLY8_VOICE_COUNT; ++i)
+            if (voices[i].age < v->age) v = &voices[i];
+    }
+    memset(v, 0, sizeof(*v));
+    v->active = 1; v->keyDown = 1; v->note = note; v->velocity = velocity;
+    v->age = ++ageCounter; v->stage = ENV_ATTACK;
+}
+
+void Poly8_NoteOff(uint8_t note) {
+    for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
+        Poly8Voice *v = &voices[i];
+        if (v->active && v->keyDown && v->note == note) {
+            v->keyDown = 0; v->releaseStart = v->env; v->stage = ENV_RELEASE;
+        }
+    }
+}
+
+void Poly8_AllNotesOff(void) {
+    for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
+        Poly8Voice *v = &voices[i];
+        if (v->active && v->keyDown) {
+            v->keyDown = 0; v->releaseStart = v->env; v->stage = ENV_RELEASE;
+        }
+    }
+}
+
+static float osc(float phase) {
+    switch (params.waveform) {
+        case POLY8_SQUARE: return phase < 0.5f ? 1.0f : -1.0f;
+        case POLY8_TRIANGLE: return 1.0f - 4.0f * fabsf(phase - 0.5f);
+        case POLY8_SAW:
+        default: return 2.0f * phase - 1.0f;
+    }
+}
+
+static float envStep(Poly8Voice *v) {
+    switch (v->stage) {
+        case ENV_ATTACK:
+            v->env += 1.0f / (params.attackSeconds * sampleRate);
+            if (v->env >= 1.0f) { v->env = 1.0f; v->stage = ENV_DECAY; }
+            break;
+        case ENV_DECAY:
+            v->env -= (1.0f - params.sustain) / (params.decaySeconds * sampleRate);
+            if (v->env <= params.sustain) { v->env = params.sustain; v->stage = ENV_SUSTAIN; }
+            break;
+        case ENV_SUSTAIN: v->env = params.sustain; break;
+        case ENV_RELEASE:
+            v->env -= v->releaseStart / (params.releaseSeconds * sampleRate);
+            if (v->env <= 0.00001f) {
+                v->env = 0.0f; v->stage = ENV_OFF; v->active = 0;
+            }
+            break;
+        case ENV_OFF:
+        default: v->env = 0.0f; break;
+    }
+    return v->env;
+}
+
+static float renderVoice(Poly8Voice *v) {
+    if (!v->active) return 0.0f;
+    v->phase += noteFrequencies[v->note] / sampleRate;
+    if (v->phase >= 1.0f) v->phase -= 1.0f;
+
+    float e = envStep(v);
+    if (!v->active) return 0.0f;
+
+    /* Lightweight two-pole low-pass placeholder; not a final production filter. */
+    float g = filterG;
+    float input = osc(v->phase) - params.resonance * 1.6f * (v->filter1 - v->filter2);
+    v->filter1 += g * (input - v->filter1);
+    v->filter2 += g * (v->filter1 - v->filter2);
+    return v->filter2 * e * ((float)v->velocity / 127.0f) * params.masterLevel;
+}
+
+float Poly8_RenderSample(void) {
+    float mix = 0.0f;
+    for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) mix += renderVoice(&voices[i]);
+    return clampf(mix * 0.32f, -1.0f, 1.0f);
+}
+
+
+void Poly8_RenderBlock(int16_t *buffer, uint16_t count) {
+    if (!buffer) return;
+
+    for (uint16_t i = 0; i < count; ++i) {
+        float sample = Poly8_RenderSample();
+        int32_t value = (int32_t)(sample * 32767.0f);
+
+        if (value > 32767) value = 32767;
+        if (value < -32768) value = -32768;
+
+        buffer[i] = (int16_t)value;
+    }
+}

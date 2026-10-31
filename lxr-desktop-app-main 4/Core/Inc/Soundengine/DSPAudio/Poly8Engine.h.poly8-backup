@@ -1,0 +1,45 @@
+/*
+ * Poly8Engine.h
+ * Experimental virtual-analog 8-voice engine prototype.
+ * Not yet connected to LXR-02 MIDI, audio render path or UI.
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+#ifndef LXR_POLY8_ENGINE_H
+#define LXR_POLY8_ENGINE_H
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define POLY8_VOICE_COUNT 8
+
+typedef enum {
+    POLY8_SAW = 0,
+    POLY8_SQUARE = 1,
+    POLY8_TRIANGLE = 2
+} Poly8Waveform;
+
+typedef struct {
+    Poly8Waveform waveform;
+    float masterLevel;
+    float attackSeconds;
+    float decaySeconds;
+    float sustain;
+    float releaseSeconds;
+    float cutoffHz;
+    float resonance;
+} Poly8Params;
+
+void Poly8_Init(float sampleRate);
+void Poly8_SetParams(const Poly8Params *params);
+void Poly8_NoteOn(uint8_t midiNote, uint8_t velocity);
+void Poly8_NoteOff(uint8_t midiNote);
+void Poly8_AllNotesOff(void);
+float Poly8_RenderSample(void);
+
+#ifdef __cplusplus
+}
+#endif
+#endif

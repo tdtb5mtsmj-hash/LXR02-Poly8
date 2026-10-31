@@ -1,0 +1,1099 @@
+/*
+ * Copyright (C) 2012-2026 Erica Synths
+ * SPDX-License-Identifier: GPL-3.0-only
+ *
+ * This file is part of the LXR firmware. It is licensed under the GNU General
+ * Public License version 3, with the additional permission and terms in
+ * NOTICE.md. See LICENSE and NOTICE.md in the root of the repository.
+ */
+
+//---------------------------------------------------
+/*! \file menu.h
+    \brief handles the menu structure on the LCD
+    
+    
+*/
+
+// Created:      2012-04-21 (13:47), by Julian Schmidt
+// Coypright(c): Julian Schmidt
+//---------------------------------------------------
+
+#ifndef __LCD_MENU_MANAGER__
+#define __LCD_MENU_MANAGER__
+
+//#include <avr/io.h>
+//#include <avr/pgmspace.h>
+#include "main.h"
+#include "../Parameters.h"
+//-----------------------------------------------------------------
+//#define NUM_PAGES 12		
+#define NUM_SUB_PAGES 8	// a maximum of 8 subpages 
+#define MASK_PARAMETER 0x07
+
+#define MASK_PAGE 0xf8
+#define PAGE_SHIFT 3
+//-----------------------------------------------------------------
+  #define PROGMEM
+  #define PGM_P const char *
+  #define PSTR(s) ((const PROGMEM char *)(s))
+  #define pgm_read_byte(x) (*((uint8_t *)(x)))
+  #define pgm_read_word(x) (*((uint16_t *)(x)))
+  #define pgm_read_dword(x) (*((uint32_t *)(x)))
+//-----------------------------------------------------------------
+//#define PATTERN_END_MARKER 127
+//the currently shown page from the LCD
+extern uint8_t menu_activePage;
+extern uint8_t menu_activeVoice;
+extern uint8_t menu_playedPattern;
+extern uint8_t menu_activePatternBank;
+extern uint8_t menu_shownPattern;
+extern uint8_t menu_muteModeActive;
+extern uint8_t menu_activeBar;
+extern uint8_t menu_songMenuPosition; //used to show the list in the display and scroll through it
+
+#define NUM_PRESET_LOCATIONS 6 //kit, pattern, morph, Song, project, all
+extern uint8_t menu_selectedPresetNr[NUM_PRESET_LOCATIONS];
+
+enum
+{
+	CURRENT_KIT,
+	CURRENT_MORPH,
+	CURRENT_SONG,
+	CURRENT_PROJECT,
+	NUM_CURRENT
+};
+
+extern uint8_t menu_loadedPresetNr[NUM_CURRENT];
+extern uint32_t sucessTimer;
+
+void menu_setShownPattern(uint8_t patternNr);
+uint8_t menu_getViewedPattern();
+
+
+enum PageNames
+{
+	VOICE1_PAGE,
+	VOICE2_PAGE,
+	VOICE3_PAGE,
+	VOICE4_PAGE,
+	VOICE5_PAGE,
+	VOICE6_PAGE,
+	VOICE7_PAGE,
+	MENU_MIDI_PAGE, // this is the global settings page
+	LOAD_PAGE,
+	SAVE_PAGE,
+	/*
+	LFO1_PAGE, //TODO load und savepage verschwenden speicher... nicht gefuellt. ans ende und aus dem array nehmen?
+	LFO2_PAGE,
+	LFO3_PAGE,
+	LFO4_PAGE,
+	LFO5_PAGE,
+	LFO6_PAGE,
+	*/
+	
+	PERF_PAGE,
+	SEQ_PAGE,
+	EUKLID_PAGE,
+	PATTERN_SETTINGS_PAGE,
+	RECORDING_PAGE,
+	FX_MODE_PAGE,
+
+
+
+
+	//keep the following 3 grouped together at the end
+	//otherwise >=PATTERN LOAD && <= SONG_MODE code will be broken
+
+	PATTERN_LOAD_PAGE,
+	PATTERN_SAVE_PAGE,
+	PATTERN_SAVE_PAGE_OK,
+	MENU_LAST_STEP_PAGE,
+	KIT_SAVE_PAGE_OK,
+	SONG_MODE_PAGE,
+
+	//must be last... special case
+	//CLEAR_PAGE,
+
+
+
+
+	//The Voice settings -> Midi Channel, Audio Out...
+	/*
+	VOICE1_SETTINGS_PAGE,
+	VOICE2_SETTINGS_PAGE,
+	VOICE3_SETTINGS_PAGE,
+	VOICE4_SETTINGS_PAGE,
+	VOICE5_SETTINGS_PAGE,
+	VOICE6_SETTINGS_PAGE,
+	*/
+	
+	NUM_PAGES
+};
+//-----------------------------------------------------------------
+// These are indices into the valueNames array in menu.c
+enum NamesEnum
+{
+	TEXT_EMPTY = 0,					//0
+	TEXT_COARSE,
+	TEXT_FINE,
+	TEXT_ATTACK,
+	TEXT_DECAY,
+	TEXT_PITCH_DECAY,
+	TEXT_MOD_AMOUNT,
+	TEXT_FM_AMOUNT,
+	TEXT_FM_FREQ,
+	TEXT_DRIVE,
+	TEXT_VOLUME,					//10
+	TEXT_PAN,
+	TEXT_NOISE,
+	TEXT_MIX,
+	TEXT_REPEAT,
+	TEXT_FILTER_F,
+	TEXT_FILTER_RESO,
+	TEXT_FILTER_TYPE,
+	TEXT_MOD_OSC1_FREQ,
+	TEXT_MOD_OSC2_FREQ,
+	TEXT_MOD_OSC1_GAIN,				//20
+	TEXT_MOD_OSC2_GAIN,
+	
+	TEXT_FREQ_LFO,
+	TEXT_MOD_LFO,
+	TEXT_WAVE_LFO,
+	TEXT_TARGET_LFO,
+	TEXT_SYNC_LFO,
+	TEXT_RETRIGGER_LFO,
+	TEXT_OFFSET_LFO,
+	TEXT_TARGET_VOICE_LFO,
+	TEXT_EG_SLOPE,					//30
+	TEXT_DECAY_CLOSED,
+	TEXT_DECAY_OPEN,
+	TEXT_WAVEFORM,
+	
+	TEXT_TRANSIENT_WAVE,
+	TEXT_TRANSIENT_VOLUME,
+	TEXT_TRANSIENT_FREQ,
+	
+	TEXT_EQ_GAIN,
+	TEXT_EQ_FREQ,
+#if USE_CODEC_EQ
+	TEXT_CODEC_EQ_ENABLE,
+	TEXT_CODEC_EQ_FB,
+	TEXT_CODEC_EQ_FT,
+	TEXT_CODEC_EQ_GB,
+	TEXT_CODEC_EQ_GT,
+	
+	TEXT_CODEC_LIMIT_ENABLE,
+	TEXT_CODEC_LIMIT_ATTACK,
+	TEXT_CODEC_LIMIT_RELEASE,
+	TEXT_CODEC_LIMIT_MAX,
+	TEXT_CODEC_LIMIT_MIN,
+#endif
+	TEXT_ROLL_SPEED,
+	TEXT_X_FADE,					//40
+	
+	TEXT_STEP_VELOCITY,
+	TEXT_NOTE,
+	TEXT_PROBABILITY,
+	TEXT_ACTIVE_STEP,
+	TEXT_PAT_LENGTH,
+	TEXT_NUM_STEPS,
+	TEXT_ROTATION,
+	TEXT_STEP_FLAM,
+	TEXT_STEP_SHIFT,
+	
+	//Global Parameters
+	TEXT_BPM,
+	TEXT_MIDI_CHANNEL,
+	TEXT_AUDIO_OUT,				 	//50
+	TEXT_SAMPLE_RATE,
+	TEXT_PATTERN_BEAT,
+	TEXT_PATTERN_NEXT,
+	
+	
+	//TEXT_OSC_PHASE,
+	TEXT_MODE,
+	TEXT_OSC_VOLUME,
+	TEXT_FILTER_DRIVE,
+	
+	TEXT_VEL_DEST,
+	TEXT_VEL_AMT,
+	TEXT_VEL_MOD_VOL,
+	TEXT_FETCH,						//60
+	TEXT_FOLLOW,
+	TEXT_QUANTISATION,
+	TEXT_AUTOMATION_TRACK,
+	TEXT_PARAM_DEST,	
+	TEXT_PARAM_VAL,
+	TEXT_SHUFFLE,
+	TEXT_SCREENSAVER_ON_OFF,
+	
+	TEXT_SKIP, //spacer to insert if 1st of 2 pages has only 3 parameters
+	
+	TEXT_POS_X,
+	TEXT_POS_Y,						//70
+	TEXT_FLUX,
+	TEXT_SOM_FREQ,
+	TEXT_MIDI_MODE,	// This is now unused
+	TEXT_MIDI_ROUTING,
+	TEXT_MIDI_FILT_TX,
+	TEXT_MIDI_FILT_RX,
+	TEXT_TRIGGER_IN_PPQ,
+	TEXT_TRIGGER_OUT1_PPQ,
+	TEXT_TRIGGER_OUT2_PPQ,
+	TEXT_TRIGGER_GATE_MODE,
+	TEXT_BAR_RESET_MODE,
+	TEXT_MIDI_CHAN_GLOBAL,
+	TEXT_PWM,
+	TEXT_FX_TYPE,
+	TEXT_FX_ROUTING,
+	TEXT_FX_DRY_WET,
+
+
+	TEXT_FX_DIST_DRIVE,
+	TEXT_FX_COLOR,
+	TEXT_FX_RATIO,
+	TEXT_FX_COMP_ATTACK,
+	TEXT_FX_COMP_DECAY,
+	TEXT_FX_COMP_THRESHOLD,
+	TEXT_FX_FREQ,
+	TEXT_FX_WAVE,
+	TEXT_FX_VOLUME,
+	TEXT_FX_TONE,
+	TEXT_FX_GAIN,
+	TEXT_FX_FEEDBACK,
+	TEXT_FX_RANGE,
+	TEXT_FX_TIME,
+	TEXT_FX_PREDELAY,
+	TEXT_FX_REFLECTION,
+	TEXT_FX_P1,
+	TEXT_FX_P2,
+	TEXT_FX_P3,
+	TEXT_FX_P4,
+	TEXT_PATTERN_MODE,
+    TEXT_POLY8_WAVE,
+    TEXT_POLY8_VOL,
+    TEXT_POLY8_ATTACK,
+    TEXT_POLY8_DECAY,
+    TEXT_POLY8_SUSTAIN,
+    TEXT_POLY8_RELEASE,
+    TEXT_POLY8_CUTOFF,
+    TEXT_POLY8_RESO,
+
+	NUM_NAMES
+};
+//-----------------------------------------------------------------
+enum WaveformNamesEnum
+{
+	WAVEFORM_SINE,
+	WAVEFORM_TRI,
+	WAVEFORM_SAW,
+	WAVEFORM_REC,
+	WAVEFORM_NOISE,
+	WAVEFORM_PWM,
+};	
+//-----------------------------------------------------------------
+enum shortNamesEnum
+{ // these must correspond with shortNames
+	SHORT_EMPTY,
+	SHORT_COARSE,
+	SHORT_FINE,
+	SHORT_ATTACK,
+	SHORT_DECAY,
+	SHORT_EG2,
+	SHORT_MOD,
+	SHORT_AMNT,
+	SHORT_FREQ,
+	SHORT_DRIVE,
+	SHORT_VOL,
+	SHORT_PAN,
+	SHORT_NOISE,
+	SHORT_REPEAT,
+	SHORT_MIX,
+	SHORT_FIL_RESO,
+	SHORT_TYPE,
+	SHORT_MOD_OSC1_FREQ,
+	SHORT_MOD_OSC2_FREQ,
+	SHORT_MOD_OSC1_GAIN,
+	SHORT_MOD_OSC2_GAIN,
+	SHORT_WAVE,
+	SHORT_DEST,
+	SHORT_SYNC,
+	SHORT_RETRIGGER,
+	SHORT_OFFSET,
+	SHORT_VOICE,
+	SHORT_SLOPE,
+	SHORT_DECAY1,
+	SHORT_DECAY2,
+	SHORT_EQ_GAIN,
+	SHORT_EQ_FREQ,
+#if USE_CODEC_EQ	
+	SHORT_EQ,
+	SHORT_LIMITER,
+	SHORT_RELEASE,
+	SHORT_MAX,
+	SHORT_MIN,
+#endif	
+	SHORT_ROLL,
+	SHORT_MORPH,
+	SHORT_NOTE,
+	SHORT_PROBABILITY,
+	SHORT_STEP,
+	SHORT_LENGTH,
+	SHORT_ROTATION,
+	
+	SHORT_BPM,
+	SHORT_CHANNEL,
+	SHORT_OUT,
+	SHORT_SR,
+	
+	SHORT_NXT,
+
+	SHORT_MODE,
+	SHORT_VELOCITY,
+	SHORT_FETCH,
+	SHORT_FOLLOW,
+	SHORT_QUANT,
+	SHORT_TRACK,
+	SHORT_VALUE,
+	SHORT_SHUFFLE,
+	SHORT_SCREEN_SAVER,
+	SHORT_X,
+	SHORT_Y,
+	SHORT_FLUX,
+	SHORT_MIDI,
+	SHORT_MIDI_ROUTING,
+	SHORT_MIDI_FILT_TX,
+	SHORT_MIDI_FILT_RX,
+	SHORT_TRIGGER_IN,
+	SHORT_TRIGGER_OUT1,
+	SHORT_TRIGGER_OUT2,
+	SHORT_BAR_RESET_MODE,
+	SHORT_PWM,
+	SHORT_COLOR,
+	SHORT_DRY_WET,
+	SHORT_RATIO,
+	SHORT_THRESH,
+	SHORT_TONE,
+	SHORT_GAIN,
+	SHORT_FEEDBACK,
+	SHORT_RANGE,
+	SHORT_TIME,
+	SHORT_PRE,
+	SHORT_REF,
+	SHORT_P1,
+	SHORT_P2,
+	SHORT_P3,
+	SHORT_P4,
+	SHORT_KCM,
+    SHORT_FLAM,
+    SHORT_SHIFT,
+    SHORT_POLY8_WAVE,
+    SHORT_POLY8_VOL,
+    SHORT_POLY8_ATTACK,
+    SHORT_POLY8_DECAY,
+    SHORT_POLY8_SUSTAIN,
+    SHORT_POLY8_RELEASE,
+    SHORT_POLY8_CUTOFF,
+    SHORT_POLY8_RESO
+
+};
+//-----------------------------------------------------------------
+// These correspond with catNames in MenuText.h
+enum catNamesEnum
+{
+	CAT_EMPTY,
+	CAT_OSC,
+	CAT_VELO_EG,
+	CAT_PITCH_EG,
+	CAT_PITCH_MOD,
+	CAT_FM,
+	CAT_VOICE,
+	CAT_NOISE,
+	CAT_NOISE_OSC,
+	CAT_FILTER,
+	CAT_MOD_OSC,
+	CAT_LFO,
+	CAT_TRANS,
+	CAT_EQ,
+#if USE_CODEC_EQ	
+	CAT_LIMIT,
+#endif
+	CAT_PATTERN,
+	CAT_SOUND,
+	CAT_STEP,
+	CAT_EUKLID,
+	CAT_GLOBAL,
+	CAT_VELOCITY,
+	CAT_PARAMETER,
+	CAT_SEQUENCER,
+	CAT_GENERATOR,
+	CAT_MIDI,
+	CAT_CLOCK,
+	CAT_FX
+};
+//-----------------------------------------------------------------
+// these must correspond with longNames in MenuText.h
+enum longNamesEnum
+{
+	LONG_EMPTY,
+	LONG_COARSE,
+	LONG_FINE,
+	LONG_ATTACK,
+	LONG_DECAY,
+	LONG_AMOUNT,
+	LONG_FREQ,
+	LONG_DRIVE,
+	LONG_VOL,
+	LONG_PAN,
+	LONG_MIX,
+	LONG_REPEAT_CNT,
+	LONG_RESONANCE,
+	LONG_TYPE,
+	LONG_GAIN,
+	LONG_WAVE,
+	LONG_DEST_PARAM,
+	LONG_CLOCKSYNC,
+	LONG_RETRIGGER,
+	LONG_OFFSET,
+	LONG_DEST_VOICE,
+	LONG_SLOPE,
+	LONG_DECAY_CLOSED,
+	LONG_DECAY_OPEN,
+#if USE_CODEC_EQ	
+	LONG_ENABLE,
+	LONG_RELEASE,
+	LONG_THRESH_MAX,
+	LONG_THRESH_MIN,
+#endif
+	LONG_ROLLRATE,
+	LONG_MORPH,
+	LONG_NOTE,
+	LONG_PROBABILITY,
+	LONG_NUMBER,
+	LONG_LENGTH,
+	LONG_STEPS,
+	LONG_ROTATION,
+	LONG_TEMPO,
+	LONG_AUDIO_OUT,
+	LONG_MIDI_CHANNEL,
+	LONG_SAMPLE_RATE,
+	LONG_NEXT_PAT,
+	LONG_PHASE,
+	LONG_MODE,
+	LONG_VOLUME_MOD,
+	LONG_FETCH,
+	LONG_FOLLOW,
+	LONG_QUANTISATION,
+	LONG_AUTOMATION_TRACK,
+	LONG_AUTOMATION_DEST,
+	LONG_AUTOMATION_VAL,
+	LONG_SHUFFLE,
+	LONG_SCREENSAVER,
+	LONG_X,
+	LONG_Y,
+	LONG_FLUX,
+	LONG_VELOCITY,
+	LONG_FREQ1,
+	LONG_FREQ2,
+	LONG_GAIN1,
+	LONG_GAIN2,
+	LONG_MIDI_ROUTING,
+	LONG_MIDI_FILT_TX,
+	LONG_MIDI_FILT_RX,
+	LONG_CLOCK_IN,
+	LONG_CLOCK_OUT1,
+	LONG_TRIGGER_OUT2,
+	LONG_TRIGGER_GATE_MODE,
+	LONG_BAR_RESET_MODE,
+	LONG_PWM,
+	LONG_COLOR,
+	LONG_DRY_WET,
+	LONG_RATIO,
+	LONG_THRESH,
+	LONG_TONE,
+	LONG_FEEDBACK,
+	LONG_RANGE,
+	LONG_TIME,
+	LONG_PREDELAY,
+	LONG_REFLECTION,
+	LONG_P1,
+	LONG_P2,
+	LONG_P3,
+	LONG_P4,
+	
+    LONG_FLAM,
+    LONG_SHIFT,
+    LONG_POLY8_WAVE,
+    LONG_POLY8_VOL,
+    LONG_POLY8_ATTACK,
+    LONG_POLY8_DECAY,
+    LONG_POLY8_SUSTAIN,
+    LONG_POLY8_RELEASE,
+    LONG_POLY8_CUTOFF,
+    LONG_POLY8_RESO
+	
+};
+
+//enum for the save category parameter
+enum loadSaveEnum
+{
+	SAVE_TYPE_KIT = 0,
+	SAVE_TYPE_PATTERN,
+	SAVE_TYPE_SONG,
+	SAVE_TYPE_MORPH,
+
+	SAVE_TYPE_PROJECT,	// kit data, pattern data and BPM
+	SAVE_TYPE_ALL,			// all global settings, kit data and pattern data
+	SAVE_TYPE_GLO,
+	//SAVE_TYPE_SAMPLES,
+	NUM_SAVE_TYPES
+};
+
+//-----------------------------------------------------------------
+
+//-----------------------------------------------------------------
+/** struct describing a display page.
+top values are from the 'NamesEnum' selecting a text to display.
+bottom values are from the 'ParamEnums' selecting the parameter value to show*/
+typedef struct PageStruct
+{
+	uint8_t top1;
+	uint8_t top2;
+	uint8_t top3;
+	uint8_t top4;
+	
+	uint8_t top5;
+	uint8_t top6;
+	uint8_t top7;
+	uint8_t top8;
+	
+	uint16_t bot1;
+	uint16_t bot2;
+	uint16_t bot3;
+	uint16_t bot4;
+		
+	uint16_t bot5;
+	uint16_t bot6;
+	uint16_t bot7;
+	uint16_t bot8;
+}Page;
+
+//-----------------------------------------------------------------
+// for storing valueNames which is defined in menu.c
+typedef struct NameStruct
+{
+	const uint8_t shortName; /**< 3 letter short name id*/
+	const uint8_t category; /**< category name id e.g. Filter, Noise, Velocity etc...*/
+	const uint8_t longName; /**< full name id of the parameter*/
+}Name;
+
+//-----------------------------------------------------------------
+// **AUTOM declare ModTarg struct
+typedef struct ModTargStruct {
+	const uint8_t nameIdx; 	// index into NameStruct (valueNames)
+	const uint16_t param;	// equivalent param number
+} ModTarg;
+
+//**AUTOM declare ModTargetVoiceOffset struct
+// see cc2text.c for the array of these
+typedef struct ModTargetVoiceOffsetStruct {
+	uint8_t start;
+	uint8_t end;
+}  ModTargetVoiceOffset;
+
+
+
+// need array corresponding to parameters with indices into above array
+// later will need an array of 6 or 7 for indices into above to target indiv voices
+
+//-----------------------------------------------------------------
+enum Datatypes
+{
+	DTYPE_0B255,	//0:255
+	DTYPE_0B127,	//0-127
+	DTYPE_PM100,	//-100:100
+	DTYPE_MENU,		//text type outputs 
+	DTYPE_PM63,		//-63 <-> 63
+	DTYPE_1B16,		//1-16
+	DTYPE_ON_OFF,	//0-1
+//	DTYPE_MIX_FM,	//0-1
+	DTYPE_TARGET_SELECTION_LFO,
+	DTYPE_TARGET_SELECTION_VELO,	
+	DTYPE_VOICE_LFO,
+	DTYPE_AUTOM_TARGET,
+	DTYPE_0b1,
+	DTYPE_NOTE_NAME, // eg C#0, D 1 for note name
+	DTYPE_0B15,		//0-15
+	DTYPE_1B64,		//1-64
+	DTYPE_0B100,	// 0-100
+	//mööp - only 8 bit available, the others are used for menu :-/
+	//DTYPE_BPM,		// 0=EXT then 1 to 255
+
+    Internal_ForceMyEnumIntSize = 0xffff //to make enum 16 bit
+};
+
+//-----------------------------------------------------------------
+extern const enum Datatypes parameter_dtypes[NUM_PARAMS];
+extern uint8_t mainParameters[NUM_KIT_SLOTS][END_OF_SOUND_PARAMETERS];		// keeps all kits from sd card in memory
+extern uint8_t activeParameters[NUM_PARAMS];					// keeps the currently used kit in memory -> editBuffer
+//extern uint8_t morphParameters[END_OF_SOUND_PARAMETERS];
+extern uint8_t *morphParameters;
+//extern uint8_t abs_pot_Parameter_position[NUM_PARAMS];
+
+extern const Page menuPages[NUM_PAGES][NUM_SUB_PAGES];
+
+
+// **AUTOM declare modTargets array
+// this is used for better organizing modulation targets. An index into this
+// array is stored in PAR_P*_DEST in front. this table is used to display values
+// as well as translate the value to a parameter. Param value in "Front" represents an index
+// into this array, but is translated to a real param number when going back to "cortex"
+// also, translated the other way when coming back
+// we have a separate array of indices into this array called modTargetVoiceOffsets that determines
+// where a voice starts and ends in modTargets array.
+extern const ModTarg modTargets[];
+extern const ModTargetVoiceOffset modTargetVoiceOffsets[6];
+
+// **AUTOM declare paramToModTarget array
+// this is an array of indices into modTargets which is defined in cc2text.c
+// It is calculated at runtime TODO move this to progmem sometime
+extern uint8_t paramToModTarget[END_OF_SOUND_PARAMETERS];
+
+
+void menu_showSdError(uint8_t res);
+
+/** returns the current menu index (page and parameter, see MASK_PAGE / MASK_PARAMETER) */
+uint8_t getMenuIndx(void);
+
+//-----------------------------------------------------------------
+/** forces a complete repaint of the display*/
+void menu_repaintAll();
+//-----------------------------------------------------------------
+//repaint the screen. show all changes*/
+void menu_repaint();
+--
+--
+--
+--
+--
+--
+--
+--
+3829-{
+--
+--
+3910-}
+3912-uint8_t getMenuIndx(void)
+3913-{
+--
+  258 const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
+  259 	    /*PAR_NONE*/ 			DTYPE_0B127,			// 0
+  260 	    /*PAR_OSC_WAVE_DRUM1*/ 	DTYPE_MENU | (MENU_WAVEFORM<<8),
+  261 	    /*PAR_OSC_WAVE_DRUM2*/ 	DTYPE_MENU | (MENU_WAVEFORM<<8),
+  262 	    /*PAR_OSC_WAVE_DRUM3*/ 	DTYPE_MENU | (MENU_WAVEFORM<<8),
+  263 	    /*PAR_OSC_WAVE_SNARE*/  DTYPE_MENU | (MENU_WAVEFORM<<8),
+  264 	    /*NRPN_DATA_ENTRY_COARSE*/ DTYPE_0B127,
+  265 	    /*PAR_WAVE1_CYM*/  		DTYPE_MENU | (MENU_WAVEFORM<<8),
+  266 	    /*PAR_WAVE1_HH*/  		DTYPE_MENU | (MENU_WAVEFORM<<8),
+  267 	    /*PAR_COARSE1*/ 		DTYPE_PM63,//DTYPE_0B127,
+  268 	    /*PAR_FINE1*/ 			DTYPE_PM63,
+  269 	    /*PAR_COARSE2*/			DTYPE_PM63,//DTYPE_0B127,,	// 10
+  270 	    /*PAR_FINE2*/ 			DTYPE_PM63,
+  271 	    /*PAR_COARSE3*/ 		DTYPE_PM63,//DTYPE_0B127,,
+  272 	    /*PAR_FINE3*/ 			DTYPE_PM63,
+  273 	    /*PAR_COARSE4*/ 		DTYPE_PM63,//DTYPE_0B127,,
+  274 	    /*PAR_FINE4*/ 			DTYPE_PM63,
+  275 	    /*PAR_COARSE5*/			DTYPE_PM63,//DTYPE_0B127,,
+  276 	    /*PAR_FINE5*/ 			DTYPE_PM63,
+  277 	    /*PAR_COARSE6*/ 		DTYPE_PM63,//DTYPE_0B127,,
+  278 	    /*PAR_FINE6*/ 			DTYPE_PM63,
+  279 	    /*PAR_MOD_WAVE_DRUM1*/  DTYPE_MENU | (MENU_WAVEFORM<<8),		//20
+  280 	    /*PAR_MOD_WAVE_DRUM2*/  DTYPE_MENU | (MENU_WAVEFORM<<8),
+  281 	    /*PAR_MOD_WAVE_DRUM3*/  DTYPE_MENU | (MENU_WAVEFORM<<8),
+  282 	    /*PAR_WAVE2_CYM*/ 		DTYPE_MENU | (MENU_WAVEFORM<<8),
+  283 	    /*PAR_WAVE3_CYM*/ 		DTYPE_MENU | (MENU_WAVEFORM<<8),
+  284 	    /*PAR_WAVE2_HH*/ 		DTYPE_MENU | (MENU_WAVEFORM<<8),
+  285 	    /*PAR_WAVE3_HH*/ 		DTYPE_MENU | (MENU_WAVEFORM<<8),
+  286 	    /*PAR_NOISE_FREQ1*/ 	DTYPE_0B127,
+  287 	    /*PAR_MIX1*/ 			DTYPE_0B127,
+  288 	    /*PAR_MOD_OSC_F1_CYM*/ 	DTYPE_PM63,//DTYPE_0B127,,
+  289 	    /*PAR_MOD_OSC_F2_CYM*/ 	DTYPE_PM63,//DTYPE_0B127,,		//30
+  290 	    /*PAR_MOD_OSC_GAIN1_CYM*/ DTYPE_0B127,
+  291 	    /*PAR_MOD_OSC_GAIN2_CYM*/ DTYPE_0B127,
+  292 	    /*PAR_MOD_OSC_F1*/ 		DTYPE_PM63,//DTYPE_0B127,,
+  293 	    /*PAR_MOD_OSC_F2*/ 		DTYPE_PM63,//DTYPE_0B127,,
+  294 	    /*PAR_MOD_OSC_GAIN1*/ 	DTYPE_0B127,
+  295 	    /*PAR_MOD_OSC_GAIN2*/ 	DTYPE_0B127,
+  296 	    /*PAR_FILTER_FREQ_1*/ 	DTYPE_0B127,
+  297 	    /*PAR_FILTER_FREQ_2*/ 	DTYPE_0B127,
+  298 	    /*PAR_FILTER_FREQ_3*/ 	DTYPE_0B127,
+  299 	    /*PAR_FILTER_FREQ_4*/ 	DTYPE_0B127,				//40
+  300 	    /*PAR_FILTER_FREQ_5*/ 	DTYPE_0B127,
+  301 	    /*PAR_FILTER_FREQ_6*/ 	DTYPE_0B127,
+  302 	    /*PAR_RESO_1*/ 			DTYPE_0B127,
+  303 	    /*PAR_RESO_2*/ 			DTYPE_0B127,
+  304 	    /*PAR_RESO_3*/ 			DTYPE_0B127,
+  305 	    /*PAR_RESO_4*/ 			DTYPE_0B127,
+  306 	    /*PAR_RESO_5*/ 			DTYPE_0B127,
+  307 	    /*PAR_RESO_6*/ 			DTYPE_0B127,
+  308 	    /*PAR_VELOA1*/ 			DTYPE_0B127,
+  309 	    /*PAR_VELOD1*/ 			DTYPE_0B127,			//50
+  310 	    /*PAR_VELOA2*/ 			DTYPE_0B127,
+  311 	    /*PAR_VELOD2*/ 			DTYPE_0B127,
+  312 	    /*PAR_VELOA3*/ 			DTYPE_0B127,
+  313 	    /*PAR_VELOD3*/ 			DTYPE_0B127,
+  314 	    /*PAR_VELOA4*/ 			DTYPE_0B127,
+  315 	    /*PAR_VELOD4*/ 			DTYPE_0B127,
+  316 	    /*PAR_VELOA5*/ 			DTYPE_0B127,
+  317 	    /*PAR_VELOD5*/ 			DTYPE_0B127,
+  318 	    /*PAR_VELOA6*/ 			DTYPE_0B127,
+  319 	    /*PAR_VELOD6_CLOSED*/ 	DTYPE_0B127,				//60
+  320 	    /*PAR_VELOD6_OPEN*/ 	DTYPE_0B127,
+  321 	    /*PAR_VOL_SLOPE1*/ 		DTYPE_0B127,
+  322 	    /*PAR_VOL_SLOPE2*/ 		DTYPE_0B127,
+  323 	    /*PAR_VOL_SLOPE3*/ 		DTYPE_0B127,
+  324 	    /*PAR_VOL_SLOPE4*/ 		DTYPE_0B127,
+  325 	    /*PAR_VOL_SLOPE5*/ 		DTYPE_0B127,
+  326 	    /*PAR_VOL_SLOPE6*/ 		DTYPE_0B127,
+  327 	    /*PAR_REPEAT4*/ 		DTYPE_0B127,
+  328 	    /*PAR_REPEAT5*/ 		DTYPE_0B127,
+  329 	    /*PAR_MOD_EG1*/ 		DTYPE_0B127,				//70
+  330 	    /*PAR_MOD_EG2*/ 		DTYPE_0B127,
+  331 	    /*PAR_MOD_EG3*/ 		DTYPE_0B127,
+  332 	    /*PAR_MOD_EG4*/ 		DTYPE_0B127,
+  333 	    /*PAR_MODAMNT1*/ 		DTYPE_0B127,
+  334 	    /*PAR_MODAMNT2*/ 		DTYPE_0B127,
+  335 	    /*PAR_MODAMNT3*/ 		DTYPE_0B127,
+  336 	    /*PAR_MODAMNT4*/ 		DTYPE_0B127,
+  337 	    /*PAR_PITCH_SLOPE1*/ 	DTYPE_0B127,
+  338 	    /*PAR_PITCH_SLOPE2*/ 	DTYPE_0B127,
+  339 	    /*PAR_PITCH_SLOPE3*/ 	DTYPE_0B127,				//80
+  340 	    /*PAR_PITCH_SLOPE4*/ 	DTYPE_0B127,
+  341 	    /*PAR_FMAMNT1*/ 		DTYPE_0B127,
+  342 	    /*PAR_FM_FREQ1*/ 		DTYPE_PM63,//DTYPE_0B127,
+  343 	    /*PAR_FMAMNT2*/ 		DTYPE_0B127,
+  344 	    /*PAR_FM_FREQ2*/ 		DTYPE_PM63,//DTYPE_0B127,
+  345 	    /*PAR_FMAMNT3*/ 		DTYPE_0B127,
+  346 	    /*PAR_FM_FREQ3*/ 		DTYPE_PM63,//DTYPE_0B127,
+  347 	    /*PAR_VOL1*/ 			DTYPE_0B127,
+  348 	    /*PAR_VOL2*/ 			DTYPE_0B127,
+  349 	    /*PAR_VOL3*/ 			DTYPE_0B127,			//90
+  350 	    /*PAR_VOL4*/ 			DTYPE_0B127,
+  351 	    /*PAR_VOL5*/ 			DTYPE_0B127,
+  352 	    /*PAR_VOL6*/ 			DTYPE_0B127,
+  353 	    /*PAR_PAN1*/ 			DTYPE_PM63,
+  354 	    /*PAR_PAN2*/ 			DTYPE_PM63,
+  355 	    /*PAR_PAN3*/ 			DTYPE_PM63,
+  356 	    /*NRPN_FINE*/ 			DTYPE_0B127,
+  357 	    /*NRPN_COARSE*/ 		DTYPE_0B127,
+  358 	    /*PAR_PAN4*/ 			DTYPE_PM63,
+  359 	    /*PAR_PAN5*/ 			DTYPE_PM63,			//100
+  360 	    /*PAR_PAN6*/ 			DTYPE_PM63,
+  361 	    /*PAR_DRIVE1*/ 			DTYPE_0B127,
+  362 	    /*PAR_DRIVE2*/ 			DTYPE_0B127,
+  363 	    /*PAR_DRIVE3*/ 			DTYPE_0B127,
+  364 	    /*PAR_SNARE_DISTORTION*/ DTYPE_0B127,
+  365 	    /*PAR_CYMBAL_DISTORTION*/ DTYPE_0B127,
+  366 	    /*PAR_HAT_DISTORTION*/ 	DTYPE_0B127,
+  367 	    /*PAR_VOICE_DECIMATION1*/ DTYPE_0B127,
+  368 	    /*PAR_VOICE_DECIMATION2*/ DTYPE_0B127,
+  369 	    /*PAR_VOICE_DECIMATION3*/ DTYPE_0B127,				//110
+  370 	    /*PAR_VOICE_DECIMATION4*/ DTYPE_0B127,
+  371 	    /*PAR_VOICE_DECIMATION5*/ DTYPE_0B127,
+  372 	    /*PAR_VOICE_DECIMATION6*/ DTYPE_0B127,
+  373 	    /*PAR_VOICE_DECIMATION_ALL */ DTYPE_0B127,
+  374 	    /*PAR_FREQ_LFO1 */ 		DTYPE_0B127,
+  375 	    /*PAR_FREQ_LFO2*/		DTYPE_0B127,
+  376 	    /*PAR_FREQ_LFO3*/ 		DTYPE_0B127,
+  377 	    /*PAR_FREQ_LFO4*/ 		DTYPE_0B127,
+  378 	    /*PAR_FREQ_LFO5*/ 		DTYPE_0B127,
+  379 	    /*PAR_FREQ_LFO6*/ 		DTYPE_0B127,				//120
+  380 	    /*PAR_AMOUNT_LFO1*/		DTYPE_0B127,
+  381 	    /*PAR_AMOUNT_LFO2*/ 	DTYPE_0B127,
+  382 	    /*PAR_AMOUNT_LFO3*/ 	DTYPE_0B127,
+  383 	    /*PAR_AMOUNT_LFO4*/		DTYPE_0B127,
+  384 	    /*PAR_AMOUNT_LFO5*/ 	DTYPE_0B127,
+  385 	    /*PAR_AMOUNT_LFO6*/ 	DTYPE_0B127,
+  386 	    /*PAR_RESERVED4*/ 		DTYPE_0B127,
+  387 	    /*PAR_FILTER_DRIVE_1*/ 	DTYPE_0B127,
+  388 	    /*PAR_FILTER_DRIVE_2*/ 	DTYPE_0B127,
+  389 	    /*PAR_FILTER_DRIVE_3*/ 	DTYPE_0B127,				//130
+  390 	    /*PAR_FILTER_DRIVE_4*/ 	DTYPE_0B127,
+  391 	    /*PAR_FILTER_DRIVE_5*/ 	DTYPE_0B127,
+  392 	    /*PAR_FILTER_DRIVE_6*/	DTYPE_0B127,
+  393 	    /*PAR_MIX_MOD_1*/ 		DTYPE_MENU | (MENU_MIX_FM<<8),
+  394 	    /*PAR_MIX_MOD_2*/ 		DTYPE_MENU | (MENU_MIX_FM<<8),
+  395 	    /*PAR_MIX_MOD_3*/ 		DTYPE_MENU | (MENU_MIX_FM<<8),
+  396 	    /*PAR_VOLUME_MOD_ON_OFF1*/ DTYPE_ON_OFF,
+  397 	    /*PAR_VOLUME_MOD_ON_OFF2*/ DTYPE_ON_OFF,
+  398 	    /*PAR_VOLUME_MOD_ON_OFF3*/ DTYPE_ON_OFF,
+  399 	    /*PAR_VOLUME_MOD_ON_OFF4*/ DTYPE_ON_OFF,				//140
+  400 	    /*PAR_VOLUME_MOD_ON_OFF5*/ DTYPE_ON_OFF,
+  401 	    /*PAR_VOLUME_MOD_ON_OFF6*/ DTYPE_ON_OFF,
+  402 	    /*PAR_VELO_MOD_AMT_1*/ 	DTYPE_0B127,
+  403 	    /*PAR_VELO_MOD_AMT_2*/ 	DTYPE_0B127,
+  404 	    /*PAR_VELO_MOD_AMT_3*/ 	DTYPE_0B127,
+  405 	    /*PAR_VELO_MOD_AMT_4*/ 	DTYPE_0B127,
+  406 	    /*PAR_VELO_MOD_AMT_5*/ 	DTYPE_0B127,
+  407 	    /*PAR_VELO_MOD_AMT_6*/ 	DTYPE_0B127,
+  408 	    /*PAR_VEL_DEST_1*/ 		DTYPE_TARGET_SELECTION_VELO,
+  409 	    /*PAR_VEL_DEST_2*/ 		DTYPE_TARGET_SELECTION_VELO,		//150
+  410 	    /*PAR_VEL_DEST_3*/ 		DTYPE_TARGET_SELECTION_VELO,
+  411 	    /*PAR_VEL_DEST_4*/ 		DTYPE_TARGET_SELECTION_VELO,
+  412 	    /*PAR_VEL_DEST_5*/ 		DTYPE_TARGET_SELECTION_VELO,
+  413 	    /*PAR_VEL_DEST_6*/ 		DTYPE_TARGET_SELECTION_VELO,
+  414 	    /*PAR_WAVE_LFO1*/ 		DTYPE_MENU | (MENU_LFO_WAVES<<8),
+  415 	    /*PAR_WAVE_LFO2*/ 		DTYPE_MENU | (MENU_LFO_WAVES<<8),
+  416 	    /*PAR_WAVE_LFO3*/ 		DTYPE_MENU | (MENU_LFO_WAVES<<8),
+  417 	    /*PAR_WAVE_LFO4 */ 		DTYPE_MENU | (MENU_LFO_WAVES<<8),
+  418 	    /*PAR_WAVE_LFO5*/ 		DTYPE_MENU | (MENU_LFO_WAVES<<8),
+  419 	    /*PAR_WAVE_LFO6*/ 		DTYPE_MENU | (MENU_LFO_WAVES<<8),	//160
+  420 	    /*PAR_VOICE_LFO1*/ 		DTYPE_VOICE_LFO,
+  421 	    /*PAR_VOICE_LFO2*/ 		DTYPE_VOICE_LFO,
+  422 	    /*PAR_VOICE_LFO3*/ 		DTYPE_VOICE_LFO,
+  423 	    /*PAR_VOICE_LFO4*/ 		DTYPE_VOICE_LFO,
+  424 	    /*PAR_VOICE_LFO5*/ 		DTYPE_VOICE_LFO,
+  425 	    /*PAR_VOICE_LFO6*/ 		DTYPE_VOICE_LFO,
+  426 	    /*PAR_TARGET_LFO1*/ 	DTYPE_TARGET_SELECTION_LFO,
+  427 	    /*PAR_TARGET_LFO2*/ 	DTYPE_TARGET_SELECTION_LFO,
+  428 	    /*PAR_TARGET_LFO3*/ 	DTYPE_TARGET_SELECTION_LFO,
+  429 	    /*PAR_TARGET_LFO4*/ 	DTYPE_TARGET_SELECTION_LFO,		//170
+  430 	    /*PAR_TARGET_LFO5*/ 	DTYPE_TARGET_SELECTION_LFO,
+  431 	    /*PAR_TARGET_LFO6*/ 	DTYPE_TARGET_SELECTION_LFO,
+  432 	    /*PAR_RETRIGGER_LFO1*/ 	DTYPE_MENU | (MENU_RETRIGGER<<8),
+  433 	    /*PAR_RETRIGGER_LFO2*/ 	DTYPE_MENU | (MENU_RETRIGGER<<8),
+  434 	    /*PAR_RETRIGGER_LFO3*/ 	DTYPE_MENU | (MENU_RETRIGGER<<8),
+  435 	    /*PAR_RETRIGGER_LFO4*/ 	DTYPE_MENU | (MENU_RETRIGGER<<8),
+  436 	    /*PAR_RETRIGGER_LFO5*/ 	DTYPE_MENU | (MENU_RETRIGGER<<8),
+  437 	    /*PAR_RETRIGGER_LFO6*/ 	DTYPE_MENU | (MENU_RETRIGGER<<8),
+  438 	    /*PAR_SYNC_LFO1*/ 		DTYPE_MENU | (MENU_SYNC_RATES<<8),
+  439 	    /*PAR_SYNC_LFO2*/ 		DTYPE_MENU | (MENU_SYNC_RATES<<8),	//180
+  440 	    /*PAR_SYNC_LFO3*/ 		DTYPE_MENU | (MENU_SYNC_RATES<<8),
+  441 	    /*PAR_SYNC_LFO4*/ 		DTYPE_MENU | (MENU_SYNC_RATES<<8),
+  442 	    /*PAR_SYNC_LFO5*/ 		DTYPE_MENU | (MENU_SYNC_RATES<<8),
+  443 	    /*PAR_SYNC_LFO6*/ 		DTYPE_MENU | (MENU_SYNC_RATES<<8),
+  444 	    /*PAR_OFFSET_LFO1*/ 	DTYPE_0B127,
+  445 	    /*PAR_OFFSET_LFO2*/ 	DTYPE_0B127,
+  446 	    /*PAR_OFFSET_LFO3*/ 	DTYPE_0B127,
+  447 	    /*PAR_OFFSET_LFO4*/ 	DTYPE_0B127,
+  448 	    /*PAR_OFFSET_LFO5*/ 	DTYPE_0B127,
+  449 	    /*PAR_OFFSET_LFO6*/ 	DTYPE_0B127,				//190
+  450 	    /*PAR_FILTER_TYPE_1*/ 	DTYPE_MENU | (MENU_FILTER<<8),
+  451 	    /*PAR_FILTER_TYPE_2*/ 	DTYPE_MENU | (MENU_FILTER<<8),
+  452 	    /*PAR_FILTER_TYPE_3*/ 	DTYPE_MENU | (MENU_FILTER<<8),
+  453 	    /*PAR_FILTER_TYPE_4*/ 	DTYPE_MENU | (MENU_FILTER<<8),
+  454 	    /*PAR_FILTER_TYPE_5*/ 	DTYPE_MENU | (MENU_FILTER<<8),
+  455 	    /*PAR_FILTER_TYPE_6*/ 	DTYPE_MENU | (MENU_FILTER<<8),
+  456 	    /*PAR_TRANS1_VOL*/ 		DTYPE_0B127,
+  457 	    /*PAR_TRANS2_VOL*/ 		DTYPE_0B127,
+  458 	    /*PAR_TRANS3_VOL*/ 		DTYPE_0B127,
+  459 	    /*PAR_TRANS4_VOL*/ 		DTYPE_0B127,				//200
+  460 	    /*PAR_TRANS5_VOL*/ 		DTYPE_0B127,
+  461 	    /*PAR_TRANS6_VOL*/ 		DTYPE_0B127,
+  462 	    /*PAR_TRANS1_WAVE*/ 	DTYPE_MENU | (MENU_TRANS<<8),
+  463 	    /*PAR_TRANS2_WAVE*/ 	DTYPE_MENU | (MENU_TRANS<<8),
+  464 	    /*PAR_TRANS3_WAVE*/ 	DTYPE_MENU | (MENU_TRANS<<8),
+  465 	    /*PAR_TRANS4_WAVE*/ 	DTYPE_MENU | (MENU_TRANS<<8),
+  466 	    /*PAR_TRANS5_WAVE*/ 	DTYPE_MENU | (MENU_TRANS<<8),
+  467 	    /*PAR_TRANS6_WAVE*/ 	DTYPE_MENU | (MENU_TRANS<<8),
+  468 	    /*PAR_TRANS1_FREQ*/ 	DTYPE_0B127,
+  469 	    /*PAR_TRANS2_FREQ*/ 	DTYPE_0B127,				//210
+  470 	    /*PAR_TRANS3_FREQ*/ 	DTYPE_0B127,
+  471 	    /*PAR_TRANS4_FREQ*/ 	DTYPE_0B127,
+  472 	    /*PAR_TRANS5_FREQ*/ 	DTYPE_0B127,
+  473 	    /*PAR_TRANS6_FREQ*/ 	DTYPE_0B127,
+  474 	    /*PAR_AUDIO_OUT1*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<8),
+  475 	    /*PAR_AUDIO_OUT2*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<8),
+  476 	    /*PAR_AUDIO_OUT3*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<8),
+  477 	    /*PAR_AUDIO_OUT4*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<8),
+  478 	    /*PAR_AUDIO_OUT5*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<8),
+  479 	    /*PAR_AUDIO_OUT6*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<8),	//220
+  480 	    // these 7
+  481 	    /*PAR_UNUSED1*/		DTYPE_NOTE_NAME,
+  482 	    /*PAR_UNUSED2*/		DTYPE_NOTE_NAME,
+  483 	    /*PAR_UNUSED3*/		DTYPE_NOTE_NAME,
+  484 	    /*PAR_UNUSED4*/		DTYPE_NOTE_NAME,
+  485 	    /*PAR_UNUSED5*/		DTYPE_NOTE_NAME,
+  486 	    /*PAR_UNUSED6*/		DTYPE_NOTE_NAME,
+  487 	    /*PAR_UNUSED7*/		DTYPE_NOTE_NAME,
+  488 
+  489 		/*PAR_PWM_1,*/			DTYPE_0B127,
+  490 		/*PAR_PWM_2,*/			DTYPE_0B127,
+  491 		/*PAR_PWM_3,*/			DTYPE_0B127,
+  492 		/*PAR_PWM_4,*/			DTYPE_0B127,
+  493 		/*PAR_PWM_5,*/			DTYPE_0B127,
+  494 		/*PAR_PWM_6,*/			DTYPE_0B127,
+  495 
+  496 		/*PAR_FX_TYPE*/			DTYPE_MENU | (MENU_FX<<8),
+  497 		/*TEXT_FX_ROUTING*/		DTYPE_MENU | (MENU_AUDIO_OUT_FX<<8),
+  498 		/*TEXT_FX_AMOUNT*/		DTYPE_0B100,
+  499 
+  500 		/*PAR_FX_DIST_TYPE*/ 	DTYPE_MENU| (MENU_DIST<<8),
+  501 		/*PAR_FX_P1*/			DTYPE_0B127,
+  502 		/*PAR_FX_P2*/			DTYPE_0B127,
+  503 		/*PAR_FX_P3*/			DTYPE_0B127,
+  504 		/*PAR_FX_P4*/			DTYPE_0B127,
+  505 		/*PAR_FX_RATIO*/		DTYPE_MENU | (MENU_RATIO<<8),
+  506 		/*PAR_FX_WAVE*/			DTYPE_MENU | (MENU_WAVEFORM<<8),
+  507 		/*PAR_FX_REVERB_TYPE*/	DTYPE_MENU | (MENU_REVERB<<8),
+  508 		/*PAR_FX_DELAY_TYPE*/	DTYPE_MENU | (MENU_DELAY<<8),
+  509 		/*PAR_MORPH_KIT_DEST*/	DTYPE_0B127,
+  510 
+  511 
+  512 	    /*PAR_ROLL*/ 			DTYPE_MENU | (MENU_ROLL_RATES<<8),
+  513 	    /*PAR_MORPH*/ 			DTYPE_0B255,
+  514 	    /*PAR_ACTIVE_STEP */ 	DTYPE_0B127,				//230
+  515 	    /*PAR_STEP_VOLUME*/ 	DTYPE_0B127,
+  516 	    /*PAR_STEP_PROB*/ 		DTYPE_0B100,
+  517 	    /*PAR_STEP_NOTE*/ 		DTYPE_NOTE_NAME,
+  518 	    /*PAR_EUKLID_LENGTH*/ 	DTYPE_1B16,
+  519 	    /*PAR_EUKLID_STEPS*/ 	DTYPE_1B16,
+  520 	    /*PAR_EUKLID_ROTATION*/	DTYPE_0B15,
+  521 	    /*PAR_AUTOM_TRACK*/ 	DTYPE_0b1,
+  522 	    /*PAR_P1_DEST*/ 		DTYPE_AUTOM_TARGET,
+  523 	    /*PAR_P2_DEST*/ 		DTYPE_AUTOM_TARGET,
+  524 	    /*PAR_P1_VAL*/ 			DTYPE_0B127,			//240
+  525 	    /*PAR_P2_VAL*/ 			DTYPE_0B127,
+  526 	    /*PAR_SHUFFLE*/ 		DTYPE_0B127,
+  527 	    /*PAR_UNUSED*/ 			DTYPE_0B127,
+  528 	    /*PAR_PATTERN_NEXT*/ 	DTYPE_MENU | (MENU_NEXT_PATTERN<<8),
+  529 	    /*PAR_TRACK_LENGTH*/ 	DTYPE_1B64,
+  530 	    /*PAR_GLO_SAT*/			DTYPE_0B127,
+  531 	    /*PAR_POS_Y*/ 			DTYPE_0B127,
+  532 	    /*PAR_FLUX*/ 			DTYPE_0B127,
+  533 	    /*PAR_SOM_FREQ*/ 		DTYPE_0B127,
+  534 	    /*PAR_TRACK_ROTATION*/  DTYPE_1B16,  //**PATROT this is not shown in menu, but if it were it would really be 0 to 15
+  535 		/*PAR_STEP_FLAM*/ 		DTYPE_MENU | (MENU_STEP_FLAM<<8),							//251
+  536 		/*PAR_STEP_SHIFT*/		DTYPE_MENU | (MENU_STEP_SHIFT<<8),
+  537 	    /*PAR_BPM*/ 			DTYPE_0B255,			//251 
+  538 	    /*PAR_MIDI_CHAN_1*/ 	DTYPE_1B16,
+  539 	    /*PAR_MIDI_CHAN_2*/ 	DTYPE_1B16,
+  540 	    /*PAR_MIDI_CHAN_3*/ 	DTYPE_1B16,
+  541 	    /*PAR_MIDI_CHAN_4*/ 	DTYPE_1B16,
+  542 	    /*PAR_MIDI_CHAN_5*/ 	DTYPE_1B16,
+  543 	    /*PAR_MIDI_CHAN_6*/ 	DTYPE_1B16,
+  544 	    /*PAR_FETCH*/ 			DTYPE_ON_OFF,
+  545 	    /*PAR_FOLLOW*/ 			DTYPE_ON_OFF,//DTYPE_MENU | (MENU_FOLLOW<<8),
+  546 	    /*PAR_QUANTISATION*/ 	DTYPE_MENU | (MENU_SEQ_QUANT<<8),
+  547 	    /*PAR_SCREENSAVER_ON_OFF*/ DTYPE_ON_OFF,				//261
+  548 	    /*PAR_MIDI_MODE*/ 		DTYPE_MENU | (MENU_MIDI<<8),		  // This is now unused.
+  549 	    /*PAR_MIDI_CHAN_7*/ 	DTYPE_1B16,
+  550 	    /*PAR_MIDI_ROUTING*/	DTYPE_MENU | (MENU_MIDI_ROUTING<<8),
+  551 	    /*PAR_MIDI_FILT_TX*/    DTYPE_MENU | (MENU_MIDI_FILTERING<<8),
+  552 	    /*PAR_MIDI_FILT_RX*/    DTYPE_MENU | (MENU_MIDI_FILTERING<<8),
+  553 		/*PAR_PRESCALER_CLOCK_IN*/		DTYPE_MENU | (MENU_PPQ_IN<<8),
+  554 		/*PAR_PRESCALER_CLOCK_OUT1*/	DTYPE_MENU | (MENU_PPQ_OUT<<8),
+  555 		/*PAR_PRESCALER_CLOCK_OUT2*/	DTYPE_MENU | (MENU_PPQ_OUT<<8),
+  556 		/*PAR_TRIGGER_GATE_MODE*/	DTYPE_ON_OFF,
+  557 	    /*PAR_BAR_RESET_MODE*/  DTYPE_ON_OFF,
+  558 	    /*PAR_MIDI_CHAN_GLOBAL*/DTYPE_1B16,		// global midi channel
+  559 
+  560 	    /*PAR_MIDI_NOTE1*/		DTYPE_NOTE_NAME,
+  561 	    /*PAR_MIDI_NOTE2*/		DTYPE_NOTE_NAME,
+  562 	    /*PAR_MIDI_NOTE3*/		DTYPE_NOTE_NAME,
+  563 	    /*PAR_MIDI_NOTE4*/		DTYPE_NOTE_NAME,
+  564 	    /*PAR_MIDI_NOTE5*/		DTYPE_NOTE_NAME,
+  565 	    /*PAR_MIDI_NOTE6*/		DTYPE_NOTE_NAME,
+  566 	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
+  567 		/*PAR_PATTERN_MODE*/ DTYPE_MENU | (MENU_PAT_MODE<<8),
+  568 };
+        /*PAR_POLY8_WAVE*/    DTYPE_0B127,
+        /*PAR_POLY8_VOL*/     DTYPE_0B127,
+        /*PAR_POLY8_ATTACK*/  DTYPE_0B127,
+        /*PAR_POLY8_DECAY*/   DTYPE_0B127,
+        /*PAR_POLY8_SUSTAIN*/ DTYPE_0B127,
+        /*PAR_POLY8_RELEASE*/ DTYPE_0B127,
+        /*PAR_POLY8_CUTOFF*/  DTYPE_0B127,
+        /*PAR_POLY8_RESO*/    DTYPE_0B127,
+578-};
+429-/* Poly8 synthesizer parameters */
+430-PAR_POLY8_WAVE,
+431-PAR_POLY8_VOL,
+432-PAR_POLY8_ATTACK,
+433-PAR_POLY8_DECAY,
+434-PAR_POLY8_SUSTAIN,
+435-PAR_POLY8_RELEASE,
+436-PAR_POLY8_CUTOFF,
+437-PAR_POLY8_RESO,
+439-NUM_PARAMS
+578-};
+    TEXT_POLY8_VOL,
+    TEXT_POLY8_ATTACK,
+    TEXT_POLY8_DECAY,
+    TEXT_POLY8_SUSTAIN,
+    TEXT_POLY8_RELEASE,
+    TEXT_POLY8_CUTOFF,
+    TEXT_POLY8_RESO,
+276-};
+277-//-----------------------------------------------------------------
+278-enum WaveformNamesEnum
+279-{
+
+
+255-};
+257-//---------------------------------------------------------------
+258-// Parameter types. These correspond with ParamEnums and entries in parameter_values
+259-const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
+//For nonblocking display refreshs
+void menu_tick();
+//-----------------------------------------------------------------
+//blocking display refresh
+//void menu_fastRefreshDisplay();
+//-----------------------------------------------------------------
+//number of user samples in flash
+void menu_setNumSamples(uint8_t num);
+//-----------------------------------------------------------------
+/**set all save state parameters to 0*/
+void menu_resetSaveParameters();
+//-----------------------------------------------------------------
+void menu_setLoadSaveCategory(uint8_t cat);
+//-----------------------------------------------------------------
+void menu_init();
+//-----------------------------------------------------------------
+/** takes the values received from the encoder and translates it to menu changes*/
+void menu_parseEncoder(int8_t inc, uint8_t button);
+//-----------------------------------------------------------------
+void menu_switchPage(uint8_t pageNr);
+//-----------------------------------------------------------------
+void menu_switchSubPage(uint8_t subPageNr, uint8_t toggle);
+//-----------------------------------------------------------------
+void menu_resetActiveParameter();
+//-----------------------------------------------------------------
+uint8_t menu_getSubPage();
+//-----------------------------------------------------------------
+uint8_t menu_getDisplayParameterType(uint8_t pos);
+//-----------------------------------------------------------------
+uint8_t menu_parseKnobValue(uint8_t potNr, int16_t diff);
+//-----------------------------------------------------------------
+void menu_parseGlobalParam(uint16_t paramNr, uint8_t value);
+//-----------------------------------------------------------------
+/** all parameters are send to the cortex soundchip. called after loading a preset into the avr ram*/
+void menu_sendAllParameters();
+//-----------------------------------------------------------------
+/** get the currently active page nr*/
+uint8_t menu_getActivePage();
+//-----------------------------------------------------------------
+uint8_t menu_areMuteLedsShown();
+//-----------------------------------------------------------------
+/** get the currently active voice nr*/
+uint8_t menu_getActiveVoice();
+//-----------------------------------------------------------------
+void menu_setActiveVoice(uint8_t voiceNr);
+//-----------------------------------------------------------------
+/** used to upodate all global parameters that need processing after a preset is loaded*/
+void menu_sendAllGlobals();
+//-----------------------------------------------------------------
+uint8_t sendDisplayBuffer();
+//-----------------------------------------------------------------
+void numtostrpu_2Bytes(char *buf, uint8_t num, char pad);
+/* fill up to 3 bytes of a buffer with string representation of a number */
+// left padded with specified char unsigned
+void numtostrpu(char *buf, uint8_t num, char pad);
+// space padded signed
+void numtostrps(char *buf, int8_t num);
+// non space padded unsigned
+void numtostru(char *buf, uint8_t num);
+// non space padded signed
+//void numtostrs(char *buf, int8_t num);
+
+#endif
