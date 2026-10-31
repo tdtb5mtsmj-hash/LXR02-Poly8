@@ -42,6 +42,10 @@ jobs:
             tests/poly8_engine_smoke.c -lm -o /tmp/poly8_engine_smoke
           /tmp/poly8_engine_smoke
 
+      - name: Check Poly8 preset-version layout
+        working-directory: "lxr-desktop-app-main 4"
+        run: python3 tests/poly8_preset_layout_smoke.py
+
       - name: Configure release build
         working-directory: "lxr-desktop-app-main 4"
         run: cmake --preset release -DARM_TOOLCHAIN_DIR=/usr/bin
