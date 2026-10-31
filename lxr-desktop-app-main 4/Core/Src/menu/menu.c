@@ -59,10 +59,14 @@ static const uint16_t poly8VoiceParamIds[POLY8_VOICE_COUNT][12] = {
 
 static Poly8Waveform menu_poly8Waveform(uint8_t value)
 {
-    if (value < 32) return POLY8_SAW;
-    if (value < 64) return POLY8_SQUARE;
-    if (value < 96) return POLY8_TRIANGLE;
-    return POLY8_SINE;
+    /* The dedicated Poly8 menu stores a real 0..3 enum, not a 0..127 bucket. */
+    switch (value) {
+    case 1: return POLY8_SQUARE;
+    case 2: return POLY8_TRIANGLE;
+    case 3: return POLY8_SINE;
+    case 0:
+    default: return POLY8_SAW;
+    }
 }
 
 static void menu_applyPoly8Params(void)
@@ -626,7 +630,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
 		/*PAR_PATTERN_MODE*/ DTYPE_MENU | (MENU_PAT_MODE<<8),
         /* Poly8 synthesizer parameters */
-        /*PAR_POLY8_WAVE*/    DTYPE_0B127,
+        /*PAR_POLY8_WAVE*/    DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOL*/     DTYPE_0B127,
         /*PAR_POLY8_ATTACK*/  DTYPE_0B127,
         /*PAR_POLY8_DECAY*/   DTYPE_0B127,
@@ -634,7 +638,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_RELEASE*/ DTYPE_0B127,
         /*PAR_POLY8_CUTOFF*/  DTYPE_0B127,
         /*PAR_POLY8_RESO*/    DTYPE_0B127,
-        /*PAR_POLY8_VOICE1_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE1_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE1_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_SUSTAIN*/ DTYPE_0B127,
@@ -643,10 +647,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE1_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE1_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE1_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE1_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE2_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE2_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE2_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_SUSTAIN*/ DTYPE_0B127,
@@ -655,10 +659,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE2_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE2_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE2_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE2_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE3_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE3_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE3_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_SUSTAIN*/ DTYPE_0B127,
@@ -667,10 +671,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE3_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE3_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE3_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE3_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE4_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE4_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE4_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_SUSTAIN*/ DTYPE_0B127,
@@ -679,10 +683,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE4_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE4_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE4_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE4_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE5_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE5_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE5_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_SUSTAIN*/ DTYPE_0B127,
@@ -691,10 +695,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE5_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE5_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE5_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE5_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_PITCH_FINE*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE6_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE6_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE6_ATTACK*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_DECAY*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_SUSTAIN*/ DTYPE_0B127,
@@ -703,7 +707,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE6_RESO*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_FM_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_FM_RATIO*/ DTYPE_0B127,
-        /*PAR_POLY8_VOICE6_FM_WAVE*/ DTYPE_0B127,
+        /*PAR_POLY8_VOICE6_FM_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
         /*PAR_POLY8_VOICE6_PITCH_COARSE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_PITCH_FINE*/ DTYPE_0B127,
 };
@@ -2723,6 +2727,8 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 		return nextPatternNames[0][0];
 	case MENU_WAVEFORM:
 		return (uint8_t)(waveformNames[0][0] + menu_numSamples);
+	case MENU_POLY8_WAVE:
+		return poly8WaveNames[0][0];
 	case MENU_ROLL_RATES:
 		return rollRateNames[0][0];
 	case MENU_MIDI_ROUTING:
@@ -2783,6 +2789,9 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 		break;
 	case MENU_FILTER:
 		p = filterTypes[curParmVal + 1];
+		break;
+	case MENU_POLY8_WAVE:
+		p = poly8WaveNames[(curParmVal < poly8WaveNames[0][0] ? curParmVal : 0) + 1];
 		break;
 	case MENU_WAVEFORM:
 		if(curParmVal < waveformNames[0][0])
