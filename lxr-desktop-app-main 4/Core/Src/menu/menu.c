@@ -3193,8 +3193,6 @@ static void menu_moveToMenuItem(int8_t inc)
 	int8_t activeParameter	= menuIndex & MASK_PARAMETER; // will be 0 to 7
 	int8_t activePage		= (int8_t)(menuIndex >> PAGE_SHIFT); // will be 0 to 31
     const uint8_t numSubPages = (menu_activePage == SEQ_PAGE) ? NUM_SEQ_SUB_PAGES : NUM_SUB_PAGES;
-	if (menu_activePage < POLY8_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0 && subPageNr >= POLY8_VOICE_MENU_PAGES)
-		subPageNr = 0;
 
 	uint8_t param;
 	uint8_t allowedSkips	=3; //how many skip items do we allow in a row
@@ -3320,6 +3318,8 @@ void menu_switchSubPage(uint8_t subPageNr, uint8_t toggle)
 	uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
     const uint8_t numSubPages = (menu_activePage == SEQ_PAGE) ? NUM_SEQ_SUB_PAGES : NUM_SUB_PAGES;
+	if (menu_activePage < POLY8_MENU_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0 && subPageNr >= POLY8_VOICE_MENU_PAGES)
+		subPageNr = 0;
 
 	if((toggle) && (subPageNr == activePage)) { // toggle only
 		// we are toggling to next screen, or back to first
