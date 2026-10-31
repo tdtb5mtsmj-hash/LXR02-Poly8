@@ -8,7 +8,7 @@ preset = (root / "Core/Src/Preset/presetManager.c").read_text()
 start = parameters.index("PAR_BEGINNING_OF_GLOBALS,") + len("PAR_BEGINNING_OF_GLOBALS,")
 end = parameters.index("NUM_PARAMS", start)
 global_names = re.findall(
-    r"^\\s*(PAR_[A-Z0-9_]+)\\s*(?:=[^,\\n]+)?\\s*,",
+    r"^\s*(PAR_[A-Z0-9_]+)\s*(?:=[^,\n]+)?\s*,",
     parameters[start:end],
     re.MULTILINE,
 )
@@ -22,7 +22,7 @@ constants = {
     "CURRENT_ALL_GLOBAL_BLOCK_SIZE": 160,
 }
 for name, value in constants.items():
-    assert re.search(rf"#define\\s+{name}\\s+{value}u\\b", preset), (
+    assert re.search(rf"#define\s+{name}\s+{value}u\b", preset), (
         f"{name} must remain {value}"
     )
 
