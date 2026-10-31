@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "lxr-desktop-app-main 4/**"
+      - "bootloader-hardening/**"
       - ".github/workflows/poly8-firmware-build.yml"
   push:
     branches:
@@ -11,8 +12,10 @@ on:
       - poly8-standard-menu
       - poly8-stability-filter-v2
       - poly8/final-hardening-v2
+      - bootloader/hardened-sd-updater
     paths:
       - "lxr-desktop-app-main 4/**"
+      - "bootloader-hardening/**"
       - ".github/workflows/poly8-firmware-build.yml"
 
 permissions:
@@ -79,7 +82,9 @@ jobs:
               raise SystemExit(f"Payload size is not word-aligned: {payload_size}")
           if len(payload) < 8:
               raise SystemExit("Payload does not contain the complete vector table")
-          reset_vector = struct.unpack_from("<I", payload, 4)[0]
+          stack_pointer, reset_vector = struct.unpack_from("<II", payload, 0)
+          if not (0x20000000 < stack_pointer <= 0x20080000) or stack_pointer % 8:
+              raise SystemExit(f"Invalid initial stack pointer: {stack_pointer:#010x}")
           reset_address = reset_vector & ~1
           if not (reset_vector & 1) or not (0x08008000 <= reset_address < 0x08100000):
               raise SystemExit(f"Reset vector is outside the application flash: {reset_vector:#010x}")
@@ -101,3 +106,55 @@ jobs:
             lxr-desktop-app-main 4/build/release/LXR_V2_V1.7.img.sha256
           if-no-files-found: error
           retention-days: 14
+  sd-bootloader-release:
+    name: Hardened SD bootloader build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out Poly8 repository
+        uses: actions/checkout@v4
+
+      - name: Install ARM embedded toolchain and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            cmake ninja-build gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-arm-none-eabi
+
+      - name: Fetch pinned official bootloader source
+        run: |
+          git clone https://github.com/erica-synths/lxr-desktop-bootloader.git /tmp/lxr-bootloader
+          cd /tmp/lxr-bootloader
+          git checkout 47ed4a437a1b808581447ee01ae24b4af26c8937
+
+      - name: Apply hardened updater sources
+        run: |
+          cp bootloader-hardening/Core/Src/main.c /tmp/lxr-bootloader/Core/Src/main.c
+          cp bootloader-hardening/Core/Src/flash_if.c /tmp/lxr-bootloader/Core/Src/flash_if.c
+          cp bootloader-hardening/Core/Inc/flash_if.h /tmp/lxr-bootloader/Core/Inc/flash_if.h
+
+      - name: Build hardened desktop bootloader
+        working-directory: /tmp/lxr-bootloader
+        run: |
+          cmake --preset release
+          cmake --build --preset release --parallel 2
+          arm-none-eabi-size build/release/LXR_V2_STM32F765_Bootloader.elf
+          cd build/release
+          sha256sum LXR_V2_STM32F765_Bootloader.bin > LXR_V2_STM32F765_Bootloader.bin.sha256
+          sha256sum -c LXR_V2_STM32F765_Bootloader.bin.sha256
+
+      - name: Upload test-only hardened bootloader build
+        uses: actions/upload-artifact@v4
+        with:
+          name: LXR_V2_STM32F765_Bootloader-Hardened-TEST-ONLY
+          path: |
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.bin
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.bin.sha256
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.hex
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.elf
+            /tmp/lxr-bootloader/build/release/LXR_V2_STM32F765_Bootloader.map
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Check updater safety invariants
+        run: python3 bootloader-hardening/tests/bootloader_safety_smoke.py
