@@ -1,0 +1,77 @@
+name: Poly8 firmware build
+
+on:
+  pull_request:
+    paths:
+      - "lxr-desktop-app-main 4/**"
+      - ".github/workflows/poly8-firmware-build.yml"
+  push:
+    branches:
+      - main
+      - poly8-standard-menu
+    paths:
+      - "lxr-desktop-app-main 4/**"
+      - ".github/workflows/poly8-firmware-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  stm32-release:
+    name: STM32F765 release build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install ARM embedded toolchain and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            cmake ninja-build python3 \
+            gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Configure release build
+        working-directory: "lxr-desktop-app-main 4"
+        run: cmake --preset release -DARM_TOOLCHAIN_DIR=/usr/bin
+
+      - name: Build firmware and SD-card update image
+        working-directory: "lxr-desktop-app-main 4"
+        run: cmake --build --preset release --parallel 2
+
+      - name: Verify LXR update image
+        working-directory: "lxr-desktop-app-main 4"
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import struct
+
+          image = pathlib.Path("build/release/LXR_V2_V1.7.img")
+          data = image.read_bytes()
+          if len(data) < 16:
+              raise SystemExit("Image is too short")
+          magic, payload_size, checksum = struct.unpack("<8sIB", data[:13])
+          payload = data[16:]
+          if magic != b"LXRV2IMG":
+              raise SystemExit(f"Invalid image magic: {magic!r}")
+          if payload_size != len(payload):
+              raise SystemExit(
+                  f"Payload size mismatch: header={payload_size}, actual={len(payload)}"
+              )
+          expected = 0xFF - (sum(payload) & 0xFF)
+          if checksum != expected:
+              raise SystemExit(
+                  f"Checksum mismatch: header={checksum:#04x}, expected={expected:#04x}"
+              )
+          print(f"Verified {image}: {payload_size} payload bytes, checksum {checksum:#04x}")
+          PY
+          sha256sum build/release/LXR_V2_V1.7.img
+
+      - name: Upload verified firmware image
+        uses: actions/upload-artifact@v4
+        with:
+          name: LXR_V2_V1.7-Poly8
+          path: lxr-desktop-app-main 4/build/release/LXR_V2_V1.7.img
+          if-no-files-found: error
+          retention-days: 14
