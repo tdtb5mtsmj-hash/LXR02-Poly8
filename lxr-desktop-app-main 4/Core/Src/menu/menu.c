@@ -3611,6 +3611,9 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		if (menu_lastPoly8Mode != (value ? 1u : 0u)) {
 			Poly8_AllNotesOff();
 			menu_lastPoly8Mode = value ? 1u : 0u;
+			/* Load the stored six-voice patch when entering Poly8 mode. */
+			if (value)
+				menu_applyPoly8Params();
 		}
 		break;
 
