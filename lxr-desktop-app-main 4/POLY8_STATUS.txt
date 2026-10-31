@@ -46,3 +46,9 @@ LXR-02 Poly8 — final hardening candidate (2026-10-31)
 
 Исходный код и инструкция находятся в этом каталоге. Готовый IMG публикуется
 отдельным артефактом GitHub Actions: LXR_V2_V1.7-Poly8.
+
+ПОСЛЕДНИЙ ПРОВЕРЕННЫЙ IMG (CI run 41223344310, commit 28256c72e670ac09f25ffe4ce560336c13b1145e)
+- LXR_V2_V1.7.img: 292336 байт.
+- Payload: 292320 байт; checksum: 0x7E; reset vector: 0x08015549.
+- SHA-256: 0b39007763006ae30292a73d593148f7274a72cd12953b7a32b963549c403cf4.
+- Проверка sidecar командой shasum -a 256 -c LXR_V2_V1.7.img.sha256 завершилась OK.
