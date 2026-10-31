@@ -17,6 +17,7 @@
 //#include "../Hardware/SD/ff.h"
 #include "ff.h"
 #include <stdio.h>
+#include <string.h>
 #include "menu/CcNr2Text.h"
 #include "menu/menu.h"
 //#include <util/delay.h>
@@ -1026,8 +1027,8 @@ static uint8_t preset_readGlobalDataCount(uint16_t numGlobals)
 #endif
 }
 
-// glo.cfg has no version field, so use its actual file size. Old files leave
-// the newly-added Poly8 banks at the defaults established during boot.
+// glo.cfg has no version field, so use its actual file size. Missing Poly8
+// fields are initialized by preset_readGlobalDataCount before existing bytes are copied.
 static uint8_t preset_readGlobalData(void)
 {
 #if USE_SD_CARD
