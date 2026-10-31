@@ -398,7 +398,7 @@ enum ParamEnums
 	PAR_QUANTISATION,					// UNUSED
 	
 	PAR_SCREENSAVER_ON_OFF,				// bool /*260*/
-	PAR_MIDI_MODE,						// unused now
+	PAR_MIDI_MODE,						// bool: OFF=Drum, ON=Poly8
 	PAR_MIDI_CHAN_7,
 	PAR_MIDI_ROUTING,
 	PAR_MIDI_FILT_TX,
