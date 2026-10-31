@@ -12,6 +12,7 @@ required_main = [
     "fr != FR_OK || bytesRead != requested",
     "checksum != 0xFFU",
     "application_vector_valid(vectors[0], vectors[1])",
+    "((vectors[1] & ~1UL) >= (APPLICATION_ADDRESS + imageHeader.datasize))",
     "eraseInit.NbSectors = 7U",
     "eraseStatus != HAL_OK || sectorError != 0xFFFFFFFFU",
     "HAL_FLASH_Lock();",
