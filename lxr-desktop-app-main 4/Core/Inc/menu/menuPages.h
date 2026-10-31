@@ -562,7 +562,7 @@ const Page menuPages[NUM_PAGES][NUM_SUB_PAGES] =
  * Standard Poly8 voice pages. These are selected through the normal voice
  * pages (0..5), leaving the original Drum menu table untouched.
  */
-static const Page poly8VoicePages[POLY8_VOICE_COUNT][POLY8_VOICE_MENU_PAGES] =
+static const Page poly8VoicePages[POLY8_MENU_VOICE_COUNT][POLY8_VOICE_MENU_PAGES] =
 {
     { // Voice 1
         { TEXT_POLY8_WAVE, TEXT_EMPTY, TEXT_EMPTY, TEXT_EMPTY, TEXT_EMPTY, TEXT_EMPTY, TEXT_EMPTY, TEXT_EMPTY,
