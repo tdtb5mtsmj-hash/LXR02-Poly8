@@ -990,6 +990,11 @@ static uint8_t preset_readGlobalDataCount(uint16_t numGlobals)
             activeParameters[base + 9u] = 96;
             activeParameters[base + 10u] = 64;
             activeParameters[base + 11u] = 64;
+            const uint16_t lfoBase = (uint16_t)(PAR_POLY8_VOICE1_LFO_RATE + voice * 4u);
+            activeParameters[lfoBase + 0u] = 32;
+            activeParameters[lfoBase + 1u] = 0;
+            activeParameters[lfoBase + 2u] = 0;
+            activeParameters[lfoBase + 3u] = 0;
         }
     }
     f_read((FIL*)&SDFile, &activeParameters[PAR_BEGINNING_OF_GLOBALS], numGlobals, &bytesRead);
@@ -1178,6 +1183,30 @@ void preset_loadDefaultGlobals()
 	activeParameters[PAR_POLY8_VOICE6_FM_WAVE] = 96;
 	activeParameters[PAR_POLY8_VOICE6_PITCH_COARSE] = 64;
 	activeParameters[PAR_POLY8_VOICE6_PITCH_FINE] = 64;
+	activeParameters[PAR_POLY8_VOICE1_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE1_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE1_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE1_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE2_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE2_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE2_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE2_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE3_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE3_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE3_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE3_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE4_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE4_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE4_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE4_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE5_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE5_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE5_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE5_LFO_TARGET] = 0;
+	activeParameters[PAR_POLY8_VOICE6_LFO_RATE] = 32;
+	activeParameters[PAR_POLY8_VOICE6_LFO_AMOUNT] = 0;
+	activeParameters[PAR_POLY8_VOICE6_LFO_WAVE] = 0;
+	activeParameters[PAR_POLY8_VOICE6_LFO_TARGET] = 0;
 
     // Apply default parameters to the sound engine.
     menu_sendAllGlobals();
