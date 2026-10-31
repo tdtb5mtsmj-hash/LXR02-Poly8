@@ -57,7 +57,7 @@ static uint8_t application_vector_valid(uint32_t stackPointer, uint32_t resetVec
 {
   uint32_t resetAddress = resetVector & ~1UL;
   return (uint8_t)(
-      (stackPointer >= APP_SRAM_START) &&
+      (stackPointer > APP_SRAM_START) &&
       (stackPointer <= APP_SRAM_END_EXCLUSIVE) &&
       ((stackPointer & 7UL) == 0UL) &&
       ((resetVector & 1UL) != 0UL) &&
@@ -502,6 +502,8 @@ int main(void)
 			/* Jump to user application */
 			JumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
 			Jump_To_Application = (pFunction) JumpAddress;
+
+			__disable_irq();
 
 			HAL_RCC_DeInit();
 
