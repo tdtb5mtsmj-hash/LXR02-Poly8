@@ -1,0 +1,84 @@
+name: Extract Poly8 source archive
+
+on:
+  push:
+    branches:
+      - poly8/source-extraction
+    paths:
+      - .poly8-extract-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source branch
+        uses: actions/checkout@v4
+        with:
+          ref: poly8/source-extraction
+          fetch-depth: 0
+
+      - name: Safely extract source archive
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import shutil
+          import zipfile
+
+          archive = Path("LXR02_CURRENT_SOURCE.zip")
+          if not archive.is_file():
+              raise SystemExit("LXR02_CURRENT_SOURCE.zip not found")
+
+          staging = Path("/tmp/poly8-source-extract")
+          shutil.rmtree(staging, ignore_errors=True)
+          staging.mkdir(parents=True)
+
+          with zipfile.ZipFile(archive) as zf:
+              for info in zf.infolist():
+                  name = info.filename
+                  path = PurePosixPath(name)
+                  if path.is_absolute() or ".." in path.parts or "\\" in name:
+                      raise SystemExit(f"Unsafe ZIP entry: {name}")
+              zf.extractall(staging)
+
+          roots = [p for p in staging.iterdir() if p.name != "__MACOSX"]
+          source_root = roots[0] if len(roots) == 1 and roots[0].is_dir() else staging
+
+          copied = 0
+          for current, dirs, files in __import__("os").walk(source_root):
+              dirs[:] = [d for d in dirs if d not in {".git", "__MACOSX"}]
+              current_path = Path(current)
+              rel_dir = current_path.relative_to(source_root)
+              target_dir = Path.cwd() / rel_dir
+              target_dir.mkdir(parents=True, exist_ok=True)
+
+              for filename in files:
+                  if filename == ".DS_Store":
+                      continue
+                  source = current_path / filename
+                  rel_file = rel_dir / filename
+                  if rel_file.as_posix() == ".github/workflows/extract-poly8-source.yml":
+                      continue
+                  target = Path.cwd() / rel_file
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copy2(source, target)
+                  copied += 1
+
+          print(f"Extracted {copied} source files from {archive.name}")
+          PY
+
+      - name: Commit extracted source tree
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+          else
+            git commit -m "Extract LXR02 source archive for Poly8 development"
+            git push origin HEAD:poly8/source-extraction
+          fi
