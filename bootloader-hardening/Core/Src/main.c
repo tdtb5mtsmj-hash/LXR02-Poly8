@@ -379,7 +379,8 @@ int main(void)
       updater_error("LXR*.img", "Seek Error!");
     fr = f_read((FIL *)&firmwareFile, vectors, sizeof(vectors), &bytesRead);
     if (fr != FR_OK || bytesRead != sizeof(vectors) ||
-        !application_vector_valid(vectors[0], vectors[1]))
+        !application_vector_valid(vectors[0], vectors[1]) ||
+        ((vectors[1] & ~1UL) >= (APPLICATION_ADDRESS + imageHeader.datasize)))
       updater_error("LXR*.img", "Bad App Vector!");
 
     fr = f_lseek((FIL *)&firmwareFile, (FSIZE_t)HEADER_SIZE);
