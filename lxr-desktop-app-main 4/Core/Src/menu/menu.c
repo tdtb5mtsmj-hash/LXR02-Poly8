@@ -1533,7 +1533,7 @@ static void menu_repaintLoadSavePage()
 //-----------------------------------------------------------------
 static const Page *menu_getPageDefinition(uint8_t subPage)
 {
-    if (menu_activePage < POLY8_VOICE_COUNT &&
+    if (menu_activePage < POLY8_MENU_VOICE_COUNT &&
         activeParameters[PAR_MIDI_MODE] != 0) {
         if (subPage >= POLY8_VOICE_MENU_PAGES)
             subPage = 0;
@@ -3532,7 +3532,7 @@ void menu_switchPage(uint8_t pageNr)
 	default: //voice pages etc
 	{
 		menu_activePage = pageNr;
-		if (pageNr < POLY8_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0) {
+		if (pageNr < POLY8_MENU_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0) {
 			menuIndex = 0;
 		}
 		if(pageNr<7) {
