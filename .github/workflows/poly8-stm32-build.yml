@@ -1,0 +1,82 @@
+name: Poly8 STM32F765 release build
+
+on:
+  push:
+    branches:
+      - poly8/source-extraction
+    paths:
+      - 'Core/**'
+      - 'Drivers/**'
+      - 'Middlewares/**'
+      - 'FATFS/**'
+      - 'USB_DEVICE_MIDI/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - '.github/workflows/poly8-stm32-build.yml'
+  pull_request:
+    branches:
+      - main
+      - poly8/source-extraction
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stm32-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install ARM build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build python3 gcc-arm-none-eabi binutils-arm-none-eabi
+
+      - name: Show toolchain versions
+        run: |
+          cmake --version
+          ninja --version
+          arm-none-eabi-gcc --version
+          python3 --version
+
+      - name: Configure release
+        run: cmake --preset release
+
+      - name: Build firmware and update image
+        run: cmake --build --preset release --parallel 2
+
+      - name: Verify update image
+        run: |
+          python3 - <<'PY'
+          import pathlib, struct
+          p = pathlib.Path("build/release/LXR_V2_V1.7.img")
+          if not p.is_file() or p.stat().st_size < 17:
+              raise SystemExit("Missing or invalid LXR_V2_V1.7.img")
+          data = p.read_bytes()
+          magic, size, checksum = struct.unpack("<8sIB", data[:13])
+          payload = data[16:]
+          if magic != b"LXRV2IMG":
+              raise SystemExit(f"Bad image magic: {magic!r}")
+          if size != len(payload):
+              raise SystemExit(f"Payload size mismatch: header={size}, actual={len(payload)}")
+          expected = 0xFF - (sum(payload) & 0xFF)
+          if checksum != expected:
+              raise SystemExit(f"Checksum mismatch: header={checksum:#04x}, expected={expected:#04x}")
+          print(f"Verified {p}: {len(data)} bytes; payload {size} bytes; checksum {checksum:#04x}")
+          PY
+          sha256sum build/release/LXR_V2_V1.7.img
+
+      - name: Upload verified firmware image
+        uses: actions/upload-artifact@v4
+        with:
+          name: LXR_V2_V1.7-Poly8
+          path: |
+            build/release/LXR_V2_V1.7.img
+            build/release/LXR_V2_STM32F765.elf
+            build/release/LXR_V2_STM32F765.bin
+            build/release/LXR_V2_STM32F765.hex
+          if-no-files-found: error
+          retention-days: 14
