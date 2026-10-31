@@ -30,9 +30,9 @@ LXR-02 POLY8 — КРАТКАЯ ИНСТРУКЦИЯ
 6. LFO/MOD — LFO Rate (0,05–20 Гц), Mod Amount, LFO Wave, Target.
 
 LFO/MOD Target:
-- 0 = Pitch (до ±12 полутонов);
-- 1 = Filter Cutoff (до ±3 октав);
-- 2 = FM Amount.
+- Pit (0) = Pitch (до ±12 полутонов);
+- Cut (1) = Filter Cutoff (до ±3 октав);
+- FM (2) = FM Amount.
 
 Повторное переключение циклически проходит OSC → ENV → FILTER → FM → PITCH → LFO/MOD.
 СОХРАНЕНИЕ
