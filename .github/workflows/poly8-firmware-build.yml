@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - poly8-standard-menu
+      - poly8-stability-filter-v2
     paths:
       - "lxr-desktop-app-main 4/**"
       - ".github/workflows/poly8-firmware-build.yml"
