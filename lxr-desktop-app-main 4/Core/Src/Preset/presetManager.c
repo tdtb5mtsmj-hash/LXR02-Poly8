@@ -51,6 +51,7 @@ char currentFolder[13];
 #define FILE_VERSION 4
 #define LEGACY_GLOBAL_PARAM_COUNT 38u
 #define LEGACY_ALL_GLOBAL_BLOCK_SIZE 64u
+#define V3_GLOBAL_PARAM_COUNT 110u
 #define V3_ALL_GLOBAL_BLOCK_SIZE 128u
 #define CURRENT_ALL_GLOBAL_BLOCK_SIZE 160u
 
@@ -968,7 +969,7 @@ FRESULT preset_saveGlobals()
 }
 //----------------------------------------------------
 // Read a known global block size. Older ALL files contain 38 bytes; v3
-// contains the extended six-voice Poly8 banks as well.
+// contains 110 global parameters inside its 128-byte reserved block.
 static uint8_t preset_readGlobalDataCount(uint16_t numGlobals)
 {
 #if USE_SD_CARD
@@ -976,7 +977,21 @@ static uint8_t preset_readGlobalDataCount(uint16_t numGlobals)
     const uint16_t currentGlobals = (uint16_t)(NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS);
     if (numGlobals > currentGlobals) return 0;
     if (numGlobals < currentGlobals) {
-        /* Legacy glo.cfg / ALL v1-v2 have no independent Poly8 voice banks. */
+        /*
+         * Older glo.cfg / ALL files do not contain the appended Poly8 LFO
+         * parameters. Reset every Poly8 parameter first so loading an old
+         * file cannot retain stale values from the previously active patch.
+         * Version 3 subsequently overwrites its original 110-byte parameter
+         * region; version 1/2 only overwrites the original 38 globals.
+         */
+        activeParameters[PAR_POLY8_WAVE] = 0;
+        activeParameters[PAR_POLY8_VOL] = 31;
+        activeParameters[PAR_POLY8_ATTACK] = 10;
+        activeParameters[PAR_POLY8_DECAY] = 38;
+        activeParameters[PAR_POLY8_SUSTAIN] = 91;
+        activeParameters[PAR_POLY8_RELEASE] = 43;
+        activeParameters[PAR_POLY8_CUTOFF] = 103;
+        activeParameters[PAR_POLY8_RESO] = 19;
         for (uint8_t voice = 0; voice < 6; ++voice) {
             const uint16_t base = (uint16_t)(PAR_POLY8_VOICE1_WAVE + voice * 12u);
             activeParameters[base + 0u] = 0;
@@ -3071,11 +3086,12 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 		goto closeFile;
 
 	if(isAll){
-		// v1/v2 contain 38 globals; v3 contains 128 bytes; v4 includes Poly8 LFO/MOD.
+		// v1/v2 store 38 globals in 64 bytes; v3 stores 110 globals in 128 bytes;
+		// v4 stores the current 134 globals in a 160-byte block.
 		const uint16_t currentGlobals = (uint16_t)(NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS);
 		const uint16_t globalBytes = (version >= 4)
 		    ? currentGlobals
-		    : (version >= 3 ? V3_ALL_GLOBAL_BLOCK_SIZE : LEGACY_GLOBAL_PARAM_COUNT);
+		    : (version >= 3 ? V3_GLOBAL_PARAM_COUNT : LEGACY_GLOBAL_PARAM_COUNT);
 		if(!preset_readGlobalDataCount(globalBytes))
 			goto closeFile;
 		// Preserve each historical block size so following pattern data stays aligned.
