@@ -282,7 +282,7 @@ static float renderOscillator(uint8_t slotIndex, uint8_t section) {
     carrierPhase -= floorf(carrierPhase);
 
     const float input = oscillator(p->waveform, carrierPhase)
-        - p->resonance * 1.6f * (state->filter1 - state->filter2);
+        - p->resonance * 0.9f * (state->filter1 - state->filter2);
     float g = filterG[section];
     if (p->lfoTarget == 1u) {
         const float modulatedCutoff = clampf(p->cutoffHz * powf(2.0f, lfo * 3.0f),
@@ -298,6 +298,10 @@ static float renderOscillator(uint8_t slotIndex, uint8_t section) {
 
 float Poly8_RenderSample(void) {
     float mix = 0.0f;
+    float sectionGainSum = 0.0f;
+    for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section)
+        sectionGainSum += voiceParams[section].voiceLevel;
+
     /* Six MIDI notes x six oscillator sections = 36 independently phased paths. */
     for (uint8_t slot = 0; slot < POLY8_VOICE_COUNT; ++slot) {
         if (!noteSlots[slot].active) continue;
@@ -310,8 +314,9 @@ float Poly8_RenderSample(void) {
         if (!anySectionActive)
             noteSlots[slot].active = 0;
     }
-    /* Section faders are applied before summing; master is applied after. */
-    return clampf(mix * masterLevel * 0.32f, -1.0f, 1.0f);
+    /* Normalize by the enabled layer gains so opening more layers does not clip. */
+    if (sectionGainSum < 0.0001f) return 0.0f;
+    return clampf(mix * masterLevel * 0.32f / sectionGainSum, -1.0f, 1.0f);
 }
 
 void Poly8_RenderBlock(int16_t *buffer, uint16_t count) {
