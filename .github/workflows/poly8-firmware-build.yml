@@ -1,0 +1,103 @@
+name: Poly8 firmware build
+
+on:
+  pull_request:
+    paths:
+      - "lxr-desktop-app-main 4/**"
+      - ".github/workflows/poly8-firmware-build.yml"
+  push:
+    branches:
+      - main
+      - poly8-standard-menu
+      - poly8-stability-filter-v2
+      - poly8/final-hardening-v2
+    paths:
+      - "lxr-desktop-app-main 4/**"
+      - ".github/workflows/poly8-firmware-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  stm32-release:
+    name: STM32F765 release build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install ARM embedded toolchain and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            cmake ninja-build python3 \
+            gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Run Poly8 host DSP smoke test
+        working-directory: "lxr-desktop-app-main 4"
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -I Core/Inc \
+            Core/Src/Soundengine/DSPAudio/Poly8Engine.c \
+            tests/poly8_engine_smoke.c -lm -o /tmp/poly8_engine_smoke
+          /tmp/poly8_engine_smoke
+
+      - name: Check Poly8 preset-version layout
+        working-directory: "lxr-desktop-app-main 4"
+        run: python3 tests/poly8_preset_layout_smoke.py
+
+      - name: Configure release build
+        working-directory: "lxr-desktop-app-main 4"
+        run: cmake --preset release -DARM_TOOLCHAIN_DIR=/usr/bin
+
+      - name: Build firmware and SD-card update image
+        working-directory: "lxr-desktop-app-main 4"
+        run: cmake --build --preset release --parallel 2
+
+      - name: Verify LXR update image
+        working-directory: "lxr-desktop-app-main 4"
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import struct
+
+          image = pathlib.Path("build/release/LXR_V2_V1.7.img")
+          data = image.read_bytes()
+          if len(data) < 16:
+              raise SystemExit("Image is too short")
+          magic, payload_size, checksum = struct.unpack("<8sIB", data[:13])
+          payload = data[16:]
+          if magic != b"LXRV2IMG":
+              raise SystemExit(f"Invalid image magic: {magic!r}")
+          if payload_size != len(payload):
+              raise SystemExit(
+                  f"Payload size mismatch: header={payload_size}, actual={len(payload)}"
+              )
+          if payload_size == 0 or payload_size > 0xF8000:
+              raise SystemExit(f"Payload does not fit the STM32F765 application area: {payload_size}")
+          if payload_size % 4:
+              raise SystemExit(f"Payload size is not word-aligned: {payload_size}")
+          if len(payload) < 8:
+              raise SystemExit("Payload does not contain the complete vector table")
+          reset_vector = struct.unpack_from("<I", payload, 4)[0]
+          reset_address = reset_vector & ~1
+          if not (reset_vector & 1) or not (0x08008000 <= reset_address < 0x08100000):
+              raise SystemExit(f"Reset vector is outside the application flash: {reset_vector:#010x}")
+          expected = 0xFF - (sum(payload) & 0xFF)
+          if checksum != expected:
+              raise SystemExit(
+                  f"Checksum mismatch: header={checksum:#04x}, expected={expected:#04x}"
+              )
+          print(f"Verified {image}: {payload_size} payload bytes, checksum {checksum:#04x}")
+          PY
+          (cd build/release && sha256sum LXR_V2_V1.7.img > LXR_V2_V1.7.img.sha256 && sha256sum -c LXR_V2_V1.7.img.sha256)
+
+      - name: Upload verified firmware image
+        uses: actions/upload-artifact@v4
+        with:
+          name: LXR_V2_V1.7-Poly8
+          path: |
+            lxr-desktop-app-main 4/build/release/LXR_V2_V1.7.img
+            lxr-desktop-app-main 4/build/release/LXR_V2_V1.7.img.sha256
+          if-no-files-found: error
+          retention-days: 14

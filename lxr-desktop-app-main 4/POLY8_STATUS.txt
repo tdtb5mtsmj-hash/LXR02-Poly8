@@ -1,39 +1,54 @@
-LXR-02 Poly8 — integration status (stage 4, 2026-10-31)
+LXR-02 Poly8 — final hardening candidate (2026-10-31)
 
-Implemented in this source tree:
-- Six-slot Poly8 DSP engine is included in Core/CMakeLists.txt.
-- MIDI Note On / Note Off are routed to Poly8 when PAR_MIDI_MODE is ON; OFF retains original drum MIDI routing.
-- PAR_MIDI_MODE is exposed as an ON/OFF mode switch: OFF = Drum, ON = Poly8.
-- Changing modes sends Poly8_AllNotesOff() to prevent held notes/envelopes from becoming stale.
-- Poly8 audio is rendered into the existing mixer output path in MIDI mode 2.
-- Hardware faders 1..6 independently control the six Poly8 voice levels.
-- Master level is controlled by PAR_POLY8_VOL in the global menu; the hardware layout
-  exposes six physical faders, not a seventh master fader.
-- Each voice has its own menu bank with independent waveform, ADSR, filter cutoff,
-  resonance, FM amount, FM ratio, FM waveform, coarse pitch and fine pitch.
-- The global menu has 14 subpages: the original two global pages plus two pages
-  per Poly8 voice. Sequencer menu navigation retains its original 8-page limit.
-- Voice pitch ratio is cached when parameters change, not calculated every sample.
-- Per-voice parameters are stored in the global parameter block. glo.cfg reads
-  both legacy and extended file sizes. ALL files are version 3 with a 128-byte
-  global block; version 1/2 ALL files remain readable using their original
-  38-byte global data and 64-byte reserved block.
-- Existing MIDI note allocation and note-off behavior are preserved.
+РЕАЛИЗОВАНО
+- Шесть MIDI note slots управляют шестью независимыми oscillator layers: до 36
+  путей note/layer. Один включённый слой может играть аккорд до шести нот.
+- MIDI Note On/Off маршрутизируются в Poly8 при PAR_MIDI_MODE=ON; OFF сохраняет
+  исходный тракт драм-машины.
+- Фейдеры 1–6 управляют уровнями шести слоёв независимо. Каждый gain применяется
+  к своему слою до суммирования; PAR_POLY8_VOL — отдельная общая громкость после
+  суммирования.
+- Нормализация больше не делится на сумму значений фейдеров: снижение уровня
+  одного слоя не компенсируется автоматическим подъёмом остальных.
+- При изменении параметров слоя сохраняется текущее положение аппаратного фейдера.
+- Каждый слой имеет собственные Waveform, ADSR, Filter, FM, Pitch и LFO/MOD.
+  LFO destinations в меню подписаны Pit, Cut и FM.
+- Poly8 встроен в существующий mixer output path; при выключенном Poly8
+  сохраняется исходная драм-машина.
+- Параметры сохраняются в глобальном блоке. Совместимость ALL:
+  v1/v2 — 38 параметров в блоке 64 байта;
+  v3 — 110 параметров в блоке 128 байт;
+  v4 — 134 параметра в блоке 160 байт.
+- При загрузке старых файлов отсутствующие Poly8/LFO параметры получают
+  defaults; глобальные параметры копируются в activeParameters только после
+  успешного полного чтения.
 
-Validation performed here:
-- Poly8Engine.c compiles with host GCC using -std=c11 -Wall -Wextra -Werror.
-- Six-voice DSP smoke test passed with distinct FM amounts, FM ratios and pitch
-  offsets; non-zero audio output was confirmed.
-- Clang syntax checks passed for menu.c, presetManager.c, mixer.c and
-  Soundengine.c. Warnings reported are pre-existing unused parameters/functions
-  and comparison-parentheses warnings, not syntax errors.
-- CMake configure was attempted after removing the stale build cache. It stops
-  because arm-none-eabi-gcc is not installed in this environment.
+ПРОВЕРКИ CI
+- Host DSP smoke test: шестинотный аккорд, линейность каждого фейдера,
+  отдельная линейность Master, сохранение уровня при редактировании параметров,
+  тишина при всех опущенных фейдерах, LFO и stress test всех 36 путей.
+- Проверка preset layout: 38/64, 110/128, 134/160 и наличие безопасных defaults.
+- Полная сборка STM32F765 release.
+- Проверка IMG: LXRV2IMG magic, точная длина payload, выравнивание 4 байта,
+  предел 992 KiB, диапазон reset vector и additive checksum.
+- Артефакт CI содержит IMG и SHA-256 sidecar; SHA-256 sidecar создаётся с
+  относительным именем файла, чтобы команда macOS shasum -a 256 -c работала
+  после распаковки артефакта.
 
-Not yet completed:
-- Full STM32F765 release build and final .img generation.
-- Hardware validation on an LXR-02 device.
+ОГРАНИЧЕНИЯ
+- Физический LXR-02 не подключён: звук, MIDI, фейдеры, дисплей, сохранение на SD
+  и обновление через SD на устройстве не тестировались.
+- Официальный SD-загрузчик Erica Synths не изменён. Его проблемы описаны
+  в BOOTLOADER_AUDIT_RU.txt. Перед SD-установкой нужна отдельная проверенная
+  версия загрузчика и план восстановления через ST-Link.
+- CI-проверка IMG не является криптографической подписью и не устраняет
+  ошибки загрузчика. Не отключать питание во время обновления.
 
-Do not flash a source ZIP or an unbuilt file. Only install the LXR_V2_V1.7.img
-created by a successful STM32 release build and verified with the LXRV2IMG
-header and checksum.
+Исходный код и инструкция находятся в этом каталоге. Готовый IMG публикуется
+отдельным артефактом GitHub Actions: LXR_V2_V1.7-Poly8.
+
+ПОСЛЕДНИЙ ПРОВЕРЕННЫЙ IMG (CI run 41223344310, commit 28256c72e670ac09f25ffe4ce560336c13b1145e)
+- LXR_V2_V1.7.img: 292336 байт.
+- Payload: 292320 байт; checksum: 0x7E; reset vector: 0x08015549.
+- SHA-256: 0b39007763006ae30292a73d593148f7274a72cd12953b7a32b963549c403cf4.
+- Проверка sidecar командой shasum -a 256 -c LXR_V2_V1.7.img.sha256 завершилась OK.
