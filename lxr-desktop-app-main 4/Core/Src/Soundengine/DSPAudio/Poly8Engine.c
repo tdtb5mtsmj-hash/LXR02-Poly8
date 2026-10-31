@@ -22,7 +22,7 @@ typedef struct {
 
 /* Every sounding note has a complete DSP state in every oscillator section. */
 typedef struct {
-    float phase, modPhase, env, releaseStart;
+    float phase, modPhase, lfoPhase, env, releaseStart;
     float filter1, filter2;
     EnvStage stage;
 } Poly8OscState;
@@ -59,6 +59,10 @@ static void setVoiceDefaults(Poly8Params *p) {
     p->pitchSemitones = 0.0f;
     p->fineCents = 0.0f;
     p->fmWaveform = POLY8_SINE;
+    p->lfoRateHz = 0.5f;
+    p->lfoAmount = 0.0f;
+    p->lfoWaveform = POLY8_SINE;
+    p->lfoTarget = 0;
     p->masterLevel = 0.12f;
 }
 
@@ -81,6 +85,10 @@ static void sanitizeParams(Poly8Params *p) {
     p->fmRatio = clampf(p->fmRatio, 0.125f, 16.0f);
     p->pitchSemitones = clampf(p->pitchSemitones, -48.0f, 48.0f);
     p->fineCents = clampf(p->fineCents, -100.0f, 100.0f);
+    p->lfoRateHz = clampf(p->lfoRateHz, 0.05f, 20.0f);
+    p->lfoAmount = clampf(p->lfoAmount, 0.0f, 1.0f);
+    if (p->lfoWaveform > POLY8_SINE) p->lfoWaveform = POLY8_SINE;
+    if (p->lfoTarget > 2u) p->lfoTarget = 0u;
 }
 
 void Poly8_Init(float sr) {
@@ -248,7 +256,14 @@ static float renderOscillator(uint8_t slotIndex, uint8_t section) {
     const Poly8Params *p = &voiceParams[section];
     if (!note->active || state->stage == ENV_OFF) return 0.0f;
 
+    state->lfoPhase += p->lfoRateHz / sampleRate;
+    if (state->lfoPhase >= 1.0f) state->lfoPhase -= floorf(state->lfoPhase);
+    const float lfo = oscillator((Poly8Waveform)p->lfoWaveform, state->lfoPhase)
+        * p->lfoAmount;
+
     float hz = noteFrequencies[note->note] * pitchRatio[section];
+    if (p->lfoTarget == 0u)
+        hz *= powf(2.0f, lfo); /* +/- one octave at full depth */
     hz = clampf(hz, 1.0f, sampleRate * 0.45f);
     state->phase += hz / sampleRate;
     state->modPhase += (hz * p->fmRatio) / sampleRate;
@@ -259,13 +274,21 @@ static float renderOscillator(uint8_t slotIndex, uint8_t section) {
     float modWave = p->fmWaveform == POLY8_SINE
         ? sinf(P8_TWO_PI * state->modPhase)
         : oscillator(p->fmWaveform, state->modPhase);
-    const float modulation = modWave * (p->fmAmount * P8_FM_MAX_INDEX);
+    float fmAmount = p->fmAmount;
+    if (p->lfoTarget == 2u)
+        fmAmount = clampf(fmAmount + lfo * 0.5f, 0.0f, 1.0f);
+    const float modulation = modWave * (fmAmount * P8_FM_MAX_INDEX);
     float carrierPhase = state->phase + modulation / P8_TWO_PI;
     carrierPhase -= floorf(carrierPhase);
 
     const float input = oscillator(p->waveform, carrierPhase)
         - p->resonance * 1.6f * (state->filter1 - state->filter2);
-    const float g = filterG[section];
+    float g = filterG[section];
+    if (p->lfoTarget == 1u) {
+        const float modulatedCutoff = clampf(p->cutoffHz * powf(2.0f, lfo * 3.0f),
+            20.0f, sampleRate * 0.42f);
+        g = 1.0f - expf(-P8_TWO_PI * modulatedCutoff / sampleRate);
+    }
     state->filter1 += g * (input - state->filter1);
     state->filter2 += g * (state->filter1 - state->filter2);
 
