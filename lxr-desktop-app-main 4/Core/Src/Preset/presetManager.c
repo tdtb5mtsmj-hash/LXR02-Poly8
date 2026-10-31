@@ -48,10 +48,11 @@ char currentFolder[13];
 //char currentName[8];
 //uint8_t activePresetNr = 0;
 
-#define FILE_VERSION 3
+#define FILE_VERSION 4
 #define LEGACY_GLOBAL_PARAM_COUNT 38u
 #define LEGACY_ALL_GLOBAL_BLOCK_SIZE 64u
-#define CURRENT_ALL_GLOBAL_BLOCK_SIZE 128u
+#define V3_ALL_GLOBAL_BLOCK_SIZE 128u
+#define CURRENT_ALL_GLOBAL_BLOCK_SIZE 160u
 
 /*
 #define NUM_TRACKS 7
@@ -2647,7 +2648,7 @@ FRESULT preset_saveProject(uint8_t presetNr)
 		// write global settings
 		preset_writeGlobalData();
 
-		// v3 reserves 128 bytes for globals, enough for the six Poly8 voice banks.
+		// v4 reserves 160 bytes for globals, including six Poly8 LFO/MOD banks.
 		remain = (uint16_t)(CURRENT_ALL_GLOBAL_BLOCK_SIZE - (NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS));
 
 	} else {
@@ -3070,14 +3071,18 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 		goto closeFile;
 
 	if(isAll){
-		// v1/v2 contain the original 38 globals; v3 adds six Poly8 voice banks.
-		const uint16_t globalBytes = (version >= 3)
-		    ? (uint16_t)(NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS)
-		    : (uint16_t)LEGACY_GLOBAL_PARAM_COUNT;
+		// v1/v2 contain 38 globals; v3 contains 128 bytes; v4 includes Poly8 LFO/MOD.
+		const uint16_t currentGlobals = (uint16_t)(NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS);
+		const uint16_t globalBytes = (version >= 4)
+		    ? currentGlobals
+		    : (version >= 3 ? V3_ALL_GLOBAL_BLOCK_SIZE : LEGACY_GLOBAL_PARAM_COUNT);
 		if(!preset_readGlobalDataCount(globalBytes))
 			goto closeFile;
-		// Keep the historical 16-bit padding calculation for file compatibility.
-		remain = (uint16_t)((version >= 3 ? CURRENT_ALL_GLOBAL_BLOCK_SIZE : LEGACY_ALL_GLOBAL_BLOCK_SIZE) - globalBytes);
+		// Preserve each historical block size so following pattern data stays aligned.
+		const uint16_t globalBlockSize = (version >= 4)
+		    ? CURRENT_ALL_GLOBAL_BLOCK_SIZE
+		    : (version >= 3 ? V3_ALL_GLOBAL_BLOCK_SIZE : LEGACY_ALL_GLOBAL_BLOCK_SIZE);
+		remain = (uint16_t)(globalBlockSize - globalBytes);
 
 	} else {
 		// read bpm
