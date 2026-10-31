@@ -1743,7 +1743,9 @@ void menu_repaintGeneric()
 				break;
 				*/
 			case DTYPE_ON_OFF: //switch(parameters_dtypes[parNr] & 0x0F)
-				if(curParmVal == 1)
+				if (parNr == PAR_MIDI_MODE)
+					memcpy(&editDisplayBuffer[1][13], curParmVal ? "PLY" : "DRU", 3);
+				else if(curParmVal == 1)
 					memcpy(&editDisplayBuffer[1][13],menuText_on,3);
 				else
 					memcpy(&editDisplayBuffer[1][13],menuText_off,3);
@@ -1902,7 +1904,9 @@ void menu_repaintGeneric()
 					break;
 					*/
 				case DTYPE_ON_OFF: //switch(parameters[parNr].dtype&0x0F)
-					if(curParmVal == 1)
+					if (parNr == PAR_MIDI_MODE)
+						memcpy(valueAsText, curParmVal ? "PLY" : "DRU", 3);
+					else if(curParmVal == 1)
 						memcpy(valueAsText,menuText_on,3);
 					else
 						memcpy(valueAsText,menuText_off,3);
@@ -3336,6 +3340,12 @@ void menu_switchSubPage(uint8_t subPageNr, uint8_t toggle)
 			// toggle to next if possible
 			if(has2ndPage(activePage))
 				activeParameter=4;
+			else if (menu_activePage < POLY8_MENU_VOICE_COUNT &&
+			         activeParameters[PAR_MIDI_MODE] != 0) {
+				/* In Poly8, repeated page-toggle presses cycle OSC/ENV/FILTER/FM/PITCH. */
+				activePage = (uint8_t)((activePage + 1u) % POLY8_VOICE_MENU_PAGES);
+				activeParameter = 0;
+			}
 			else if(menu_activePage == MENU_MIDI_PAGE && activePage >= 2) {
                 /* Poly8's compact FM/pitch page has four controls; toggle advances. */
                 if (activePage < numSubPages - 1 &&
