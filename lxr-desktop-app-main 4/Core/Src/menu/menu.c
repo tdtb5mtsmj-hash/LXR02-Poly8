@@ -1531,9 +1531,20 @@ static void menu_repaintLoadSavePage()
 	}
 }
 //-----------------------------------------------------------------
+static const Page *menu_getPageDefinition(uint8_t subPage)
+{
+    if (menu_activePage < POLY8_VOICE_COUNT &&
+        activeParameters[PAR_MIDI_MODE] != 0) {
+        if (subPage >= POLY8_VOICE_MENU_PAGES)
+            subPage = 0;
+        return &poly8VoicePages[menu_activePage][subPage];
+    }
+    return &menuPages[menu_activePage][subPage];
+}
+
 static uint8_t has2ndPage(uint8_t menuPage)
 {
-	const uint8_t textType = pgm_read_byte(&menuPages[menu_activePage][menuPage].top1 + 4);
+	const uint8_t textType = pgm_read_byte(&menu_getPageDefinition(menuPage)->top1 + 4);
 	if(textType != TEXT_EMPTY)
 	{
 		return 1;
@@ -1664,7 +1675,7 @@ void menu_repaintGeneric()
 	uint8_t curParmVal;
 
 	// the active page
-	const Page *ap=&menuPages[menu_activePage][activePage];
+	const Page *ap=menu_getPageDefinition(activePage);
 
 	if(editModeActive) //show single parameter with full name
 	{
@@ -2984,7 +2995,7 @@ static void menu_encoderChangeParameter(int8_t inc)
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 
 	//get address from top1-8 from activeParameter (base adress top1 + offset)
-	uint16_t paramNr		= pgm_read_word(&menuPages[menu_activePage][activePage].bot1 + activeParameter);
+	uint16_t paramNr		= pgm_read_word(&menu_getPageDefinition(activePage)->bot1 + activeParameter);
 	//uint8_t *paramValue = &mainParameters[paramNr];
 	uint8_t *paramValue;
 
@@ -3182,6 +3193,8 @@ static void menu_moveToMenuItem(int8_t inc)
 	int8_t activeParameter	= menuIndex & MASK_PARAMETER; // will be 0 to 7
 	int8_t activePage		= (int8_t)(menuIndex >> PAGE_SHIFT); // will be 0 to 31
     const uint8_t numSubPages = (menu_activePage == SEQ_PAGE) ? NUM_SEQ_SUB_PAGES : NUM_SUB_PAGES;
+	if (menu_activePage < POLY8_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0 && subPageNr >= POLY8_VOICE_MENU_PAGES)
+		subPageNr = 0;
 
 	uint8_t param;
 	uint8_t allowedSkips	=3; //how many skip items do we allow in a row
@@ -3222,7 +3235,7 @@ checkvalid:
 	}
 
 	// read the new param
-	param = pgm_read_byte(&menuPages[menu_activePage][activePage].top1 + activeParameter);
+	param = pgm_read_byte(&menu_getPageDefinition(activePage)->top1 + activeParameter);
 	if(param == TEXT_SKIP) {
 		if(allowedSkips--) // skip this one and check the next
 			goto checkvalid;
@@ -3519,6 +3532,9 @@ void menu_switchPage(uint8_t pageNr)
 	default: //voice pages etc
 	{
 		menu_activePage = pageNr;
+		if (pageNr < POLY8_VOICE_COUNT && activeParameters[PAR_MIDI_MODE] != 0) {
+			menuIndex = 0;
+		}
 		if(pageNr<7) {
 			menu_setActiveVoice(pageNr);
 		}
@@ -4072,7 +4088,7 @@ uint8_t menu_getDisplayParameterType(uint8_t pos)
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t isOn2ndPage		= ( activeParameter > 3) * 4;
-	uint16_t paramNr				= pgm_read_word(&menuPages[menu_activePage][activePage].bot1 +
+	uint16_t paramNr				= pgm_read_word(&menu_getPageDefinition(activePage)->bot1 +
 			pos + isOn2ndPage);
 
 	return parameter_dtypes[paramNr] & 0xFF;
@@ -4091,7 +4107,7 @@ uint8_t menu_parseKnobValue(uint8_t potNr, int16_t diff)
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t isOn2ndPage		= ( activeParameter > 3) * 4;
-	uint16_t paramNr				= pgm_read_word(&menuPages[menu_activePage][activePage].bot1 +
+	uint16_t paramNr				= pgm_read_word(&menu_getPageDefinition(activePage)->bot1 +
 										potNr + isOn2ndPage);
 
 	//-------------------------------------------------
