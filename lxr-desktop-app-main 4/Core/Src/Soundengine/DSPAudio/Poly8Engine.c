@@ -1,6 +1,6 @@
 /*
  * Poly8Engine.c
- * Six-slot polyphonic virtual-analog/FM engine.
+ * Six polyphonic note slots driving six independently controlled oscillator layers.
  * SPDX-License-Identifier: GPL-3.0-only
  */
 #include "Soundengine/DSPAudio/Poly8Engine.h"
@@ -14,15 +14,21 @@
 
 typedef enum { ENV_OFF, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE } EnvStage;
 
+/* A MIDI note slot is independent from the six oscillator/layer sections. */
 typedef struct {
     uint8_t active, keyDown, note, velocity;
     uint32_t age;
+} Poly8NoteSlot;
+
+/* Every sounding note has a complete DSP state in every oscillator section. */
+typedef struct {
     float phase, modPhase, env, releaseStart;
     float filter1, filter2;
     EnvStage stage;
-} Poly8Voice;
+} Poly8OscState;
 
-static Poly8Voice voices[POLY8_VOICE_COUNT];
+static Poly8NoteSlot noteSlots[POLY8_VOICE_COUNT];
+static Poly8OscState oscStates[POLY8_VOICE_COUNT][POLY8_VOICE_COUNT];
 static Poly8Params voiceParams[POLY8_VOICE_COUNT];
 static float masterLevel = 0.12f;
 static float sampleRate = 44140.0f;
@@ -56,15 +62,14 @@ static void setVoiceDefaults(Poly8Params *p) {
     p->masterLevel = 0.12f;
 }
 
-static void updateFilterCoefficient(uint8_t voice) {
-    float cutoff = clampf(voiceParams[voice].cutoffHz, 20.0f, sampleRate * 0.42f);
-    filterG[voice] = 1.0f - expf(-P8_TWO_PI * cutoff / sampleRate);
+static void updateFilterCoefficient(uint8_t section) {
+    float cutoff = clampf(voiceParams[section].cutoffHz, 20.0f, sampleRate * 0.42f);
+    filterG[section] = 1.0f - expf(-P8_TWO_PI * cutoff / sampleRate);
 }
 
 static void sanitizeParams(Poly8Params *p) {
     if (p->waveform > POLY8_SINE) p->waveform = POLY8_SAW;
-    if (p->fmWaveform > POLY8_TRIANGLE && p->fmWaveform != POLY8_SINE)
-        p->fmWaveform = POLY8_SINE;
+    if (p->fmWaveform > POLY8_SINE) p->fmWaveform = POLY8_SINE;
     p->voiceLevel = clampf(p->voiceLevel, 0.0f, 1.0f);
     p->attackSeconds = clampf(p->attackSeconds, 0.001f, 10.0f);
     p->decaySeconds = clampf(p->decaySeconds, 0.001f, 10.0f);
@@ -79,36 +84,38 @@ static void sanitizeParams(Poly8Params *p) {
 }
 
 void Poly8_Init(float sr) {
-    memset(voices, 0, sizeof(voices));
+    memset(noteSlots, 0, sizeof(noteSlots));
+    memset(oscStates, 0, sizeof(oscStates));
     sampleRate = (sr > 8000.0f && sr < 192000.0f) ? sr : 44140.0f;
     ageCounter = 0;
     masterLevel = 0.12f;
-    for (uint8_t i = 0; i < POLY8_VOICE_COUNT; ++i) {
-        setVoiceDefaults(&voiceParams[i]);
-        updateFilterCoefficient(i);
-        pitchRatio[i] = 1.0f;
+    for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section) {
+        setVoiceDefaults(&voiceParams[section]);
+        updateFilterCoefficient(section);
+        pitchRatio[section] = 1.0f;
     }
     for (unsigned i = 0; i < 128; ++i)
         noteFrequencies[i] = noteHz((uint8_t)i);
 }
 
-void Poly8_SetVoiceParams(uint8_t voice, const Poly8Params *p) {
-    if (voice >= POLY8_VOICE_COUNT || !p) return;
-    voiceParams[voice] = *p;
-    sanitizeParams(&voiceParams[voice]);
-    updateFilterCoefficient(voice);
-    pitchRatio[voice] = powf(2.0f, (voiceParams[voice].pitchSemitones + voiceParams[voice].fineCents / 100.0f) / 12.0f);
+void Poly8_SetVoiceParams(uint8_t section, const Poly8Params *p) {
+    if (section >= POLY8_VOICE_COUNT || !p) return;
+    voiceParams[section] = *p;
+    sanitizeParams(&voiceParams[section]);
+    updateFilterCoefficient(section);
+    pitchRatio[section] = powf(2.0f,
+        (voiceParams[section].pitchSemitones + voiceParams[section].fineCents / 100.0f) / 12.0f);
 }
 
-void Poly8_GetVoiceParams(uint8_t voice, Poly8Params *p) {
-    if (voice >= POLY8_VOICE_COUNT || !p) return;
-    *p = voiceParams[voice];
+void Poly8_GetVoiceParams(uint8_t section, Poly8Params *p) {
+    if (section >= POLY8_VOICE_COUNT || !p) return;
+    *p = voiceParams[section];
     p->masterLevel = masterLevel;
 }
 
-void Poly8_SetVoiceLevel(uint8_t voice, float level) {
-    if (voice >= POLY8_VOICE_COUNT) return;
-    voiceParams[voice].voiceLevel = clampf(level, 0.0f, 1.0f);
+void Poly8_SetVoiceLevel(uint8_t section, float level) {
+    if (section >= POLY8_VOICE_COUNT) return;
+    voiceParams[section].voiceLevel = clampf(level, 0.0f, 1.0f);
 }
 
 void Poly8_SetMasterLevel(float level) {
@@ -122,58 +129,78 @@ float Poly8_GetMasterLevel(void) {
 void Poly8_SetParams(const Poly8Params *p) {
     if (!p) return;
     Poly8_SetMasterLevel(p->masterLevel);
-    for (uint8_t i = 0; i < POLY8_VOICE_COUNT; ++i)
-        Poly8_SetVoiceParams(i, p);
+    for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section)
+        Poly8_SetVoiceParams(section, p);
 }
 
 void Poly8_NoteOn(uint8_t note, uint8_t velocity) {
     if (velocity == 0) { Poly8_NoteOff(note); return; }
-    Poly8Voice *v = NULL;
-    for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
-        if (voices[i].active && voices[i].keyDown && voices[i].note == note) {
-            v = &voices[i]; break;
+
+    Poly8NoteSlot *slot = NULL;
+    /* Repeated Note On for the same held key retriggers that key's slot. */
+    for (uint8_t i = 0; i < POLY8_VOICE_COUNT; ++i) {
+        if (noteSlots[i].active && noteSlots[i].keyDown && noteSlots[i].note == note) {
+            slot = &noteSlots[i];
+            break;
         }
     }
-    if (!v) {
-        /* Prefer a truly free voice before touching any sounding note. */
-        for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
-            if (!voices[i].active) { v = &voices[i]; break; }
+    if (!slot) {
+        for (uint8_t i = 0; i < POLY8_VOICE_COUNT; ++i) {
+            if (!noteSlots[i].active) { slot = &noteSlots[i]; break; }
         }
     }
-    if (!v) {
-        /* Reclaim the oldest release-tail voice before stealing a held key. */
-        for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
-            if (voices[i].active && !voices[i].keyDown &&
-                (!v || voices[i].age < v->age)) {
-                v = &voices[i];
-            }
+    if (!slot) {
+        /* Reuse the oldest released note before stealing a currently held key. */
+        for (uint8_t i = 0; i < POLY8_VOICE_COUNT; ++i) {
+            if (!noteSlots[i].keyDown && (!slot || noteSlots[i].age < slot->age))
+                slot = &noteSlots[i];
         }
     }
-    if (!v) {
-        /* All six voices are held: use oldest-note voice stealing. */
-        v = &voices[0];
-        for (unsigned i = 1; i < POLY8_VOICE_COUNT; ++i)
-            if (voices[i].age < v->age) v = &voices[i];
+    if (!slot) {
+        slot = &noteSlots[0];
+        for (uint8_t i = 1; i < POLY8_VOICE_COUNT; ++i)
+            if (noteSlots[i].age < slot->age) slot = &noteSlots[i];
     }
-    memset(v, 0, sizeof(*v));
-    v->active = 1; v->keyDown = 1; v->note = note; v->velocity = velocity;
-    v->age = ++ageCounter; v->stage = ENV_ATTACK;
+
+    const uint8_t slotIndex = (uint8_t)(slot - noteSlots);
+    slot->active = 1;
+    slot->keyDown = 1;
+    slot->note = note;
+    slot->velocity = velocity;
+    slot->age = ++ageCounter;
+
+    /* Start this note in every oscillator section: one section can play chords. */
+    for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section) {
+        Poly8OscState *state = &oscStates[slotIndex][section];
+        memset(state, 0, sizeof(*state));
+        state->stage = ENV_ATTACK;
+    }
 }
 
 void Poly8_NoteOff(uint8_t note) {
-    for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
-        Poly8Voice *v = &voices[i];
-        if (v->active && v->keyDown && v->note == note) {
-            v->keyDown = 0; v->releaseStart = v->env; v->stage = ENV_RELEASE;
+    for (uint8_t slot = 0; slot < POLY8_VOICE_COUNT; ++slot) {
+        Poly8NoteSlot *n = &noteSlots[slot];
+        if (n->active && n->keyDown && n->note == note) {
+            n->keyDown = 0;
+            for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section) {
+                Poly8OscState *state = &oscStates[slot][section];
+                state->releaseStart = state->env;
+                state->stage = ENV_RELEASE;
+            }
         }
     }
 }
 
 void Poly8_AllNotesOff(void) {
-    for (unsigned i = 0; i < POLY8_VOICE_COUNT; ++i) {
-        Poly8Voice *v = &voices[i];
-        if (v->active && v->keyDown) {
-            v->keyDown = 0; v->releaseStart = v->env; v->stage = ENV_RELEASE;
+    for (uint8_t slot = 0; slot < POLY8_VOICE_COUNT; ++slot) {
+        Poly8NoteSlot *n = &noteSlots[slot];
+        if (n->active && n->keyDown) {
+            n->keyDown = 0;
+            for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section) {
+                Poly8OscState *state = &oscStates[slot][section];
+                state->releaseStart = state->env;
+                state->stage = ENV_RELEASE;
+            }
         }
     }
 }
@@ -188,72 +215,86 @@ static float oscillator(Poly8Waveform waveform, float phase) {
     }
 }
 
-static float envStep(Poly8Voice *v, const Poly8Params *p) {
-    switch (v->stage) {
+static float envStep(Poly8OscState *state, const Poly8Params *p) {
+    switch (state->stage) {
         case ENV_ATTACK:
-            v->env += 1.0f / (p->attackSeconds * sampleRate);
-            if (v->env >= 1.0f) { v->env = 1.0f; v->stage = ENV_DECAY; }
+            state->env += 1.0f / (p->attackSeconds * sampleRate);
+            if (state->env >= 1.0f) { state->env = 1.0f; state->stage = ENV_DECAY; }
             break;
         case ENV_DECAY:
-            v->env -= (1.0f - p->sustain) / (p->decaySeconds * sampleRate);
-            if (v->env <= p->sustain) { v->env = p->sustain; v->stage = ENV_SUSTAIN; }
+            state->env -= (1.0f - p->sustain) / (p->decaySeconds * sampleRate);
+            if (state->env <= p->sustain) {
+                state->env = p->sustain;
+                state->stage = ENV_SUSTAIN;
+            }
             break;
-        case ENV_SUSTAIN: v->env = p->sustain; break;
+        case ENV_SUSTAIN: state->env = p->sustain; break;
         case ENV_RELEASE:
-            v->env -= v->releaseStart / (p->releaseSeconds * sampleRate);
-            if (v->env <= 0.00001f) {
-                v->env = 0.0f; v->stage = ENV_OFF; v->active = 0;
+            state->env -= state->releaseStart / (p->releaseSeconds * sampleRate);
+            if (state->env <= 0.00001f) {
+                state->env = 0.0f;
+                state->stage = ENV_OFF;
             }
             break;
         case ENV_OFF:
-        default: v->env = 0.0f; break;
+        default: state->env = 0.0f; break;
     }
-    return v->env;
+    return state->env;
 }
 
-static float renderVoice(uint8_t index) {
-    Poly8Voice *v = &voices[index];
-    const Poly8Params *p = &voiceParams[index];
-    if (!v->active) return 0.0f;
+static float renderOscillator(uint8_t slotIndex, uint8_t section) {
+    Poly8NoteSlot *note = &noteSlots[slotIndex];
+    Poly8OscState *state = &oscStates[slotIndex][section];
+    const Poly8Params *p = &voiceParams[section];
+    if (!note->active || state->stage == ENV_OFF) return 0.0f;
 
-    float hz = noteFrequencies[v->note] * pitchRatio[index];
+    float hz = noteFrequencies[note->note] * pitchRatio[section];
     hz = clampf(hz, 1.0f, sampleRate * 0.45f);
-    v->phase += hz / sampleRate;
-    v->modPhase += (hz * p->fmRatio) / sampleRate;
-    if (v->phase >= 1.0f) v->phase -= floorf(v->phase);
-    if (v->modPhase >= 1.0f) v->modPhase -= floorf(v->modPhase);
+    state->phase += hz / sampleRate;
+    state->modPhase += (hz * p->fmRatio) / sampleRate;
+    if (state->phase >= 1.0f) state->phase -= floorf(state->phase);
+    if (state->modPhase >= 1.0f) state->modPhase -= floorf(state->modPhase);
 
-    float e = envStep(v, p);
-    if (!v->active) return 0.0f;
-
-    float modWave;
-    if (p->fmWaveform == POLY8_SINE)
-        modWave = sinf(P8_TWO_PI * v->modPhase);
-    else
-        modWave = oscillator(p->fmWaveform, v->modPhase);
-    float mod = modWave * (p->fmAmount * P8_FM_MAX_INDEX);
-    float carrierPhase = v->phase + (mod / P8_TWO_PI);
+    const float envelope = envStep(state, p);
+    float modWave = p->fmWaveform == POLY8_SINE
+        ? sinf(P8_TWO_PI * state->modPhase)
+        : oscillator(p->fmWaveform, state->modPhase);
+    const float modulation = modWave * (p->fmAmount * P8_FM_MAX_INDEX);
+    float carrierPhase = state->phase + modulation / P8_TWO_PI;
     carrierPhase -= floorf(carrierPhase);
-    float input = oscillator(p->waveform, carrierPhase)
-        - p->resonance * 1.6f * (v->filter1 - v->filter2);
-    float g = filterG[index];
-    v->filter1 += g * (input - v->filter1);
-    v->filter2 += g * (v->filter1 - v->filter2);
-    return v->filter2 * e * ((float)v->velocity / 127.0f) * p->voiceLevel;
+
+    const float input = oscillator(p->waveform, carrierPhase)
+        - p->resonance * 1.6f * (state->filter1 - state->filter2);
+    const float g = filterG[section];
+    state->filter1 += g * (input - state->filter1);
+    state->filter2 += g * (state->filter1 - state->filter2);
+
+    return state->filter2 * envelope * ((float)note->velocity / 127.0f)
+        * p->voiceLevel;
 }
 
 float Poly8_RenderSample(void) {
     float mix = 0.0f;
-    for (uint8_t i = 0; i < POLY8_VOICE_COUNT; ++i)
-        mix += renderVoice(i);
-    /* Individual levels are applied before summing; master is applied after. */
+    /* Six MIDI notes x six oscillator sections = 36 independently phased paths. */
+    for (uint8_t slot = 0; slot < POLY8_VOICE_COUNT; ++slot) {
+        if (!noteSlots[slot].active) continue;
+        uint8_t anySectionActive = 0;
+        for (uint8_t section = 0; section < POLY8_VOICE_COUNT; ++section) {
+            mix += renderOscillator(slot, section);
+            if (oscStates[slot][section].stage != ENV_OFF)
+                anySectionActive = 1;
+        }
+        if (!anySectionActive)
+            noteSlots[slot].active = 0;
+    }
+    /* Section faders are applied before summing; master is applied after. */
     return clampf(mix * masterLevel * 0.32f, -1.0f, 1.0f);
 }
 
 void Poly8_RenderBlock(int16_t *buffer, uint16_t count) {
     if (!buffer) return;
     for (uint16_t i = 0; i < count; ++i) {
-        float sample = Poly8_RenderSample();
+        const float sample = Poly8_RenderSample();
         int32_t value = (int32_t)(sample * 32767.0f);
         if (value > 32767) value = 32767;
         if (value < -32768) value = -32768;
