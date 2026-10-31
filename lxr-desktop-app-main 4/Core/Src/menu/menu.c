@@ -717,27 +717,27 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
         /*PAR_POLY8_VOICE1_LFO_RATE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_LFO_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE1_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
-        /*PAR_POLY8_VOICE1_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE1_LFO_TARGET*/ DTYPE_MENU | (MENU_POLY8_LFO_TARGET<<8),
         /*PAR_POLY8_VOICE2_LFO_RATE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_LFO_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE2_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
-        /*PAR_POLY8_VOICE2_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE2_LFO_TARGET*/ DTYPE_MENU | (MENU_POLY8_LFO_TARGET<<8),
         /*PAR_POLY8_VOICE3_LFO_RATE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_LFO_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE3_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
-        /*PAR_POLY8_VOICE3_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE3_LFO_TARGET*/ DTYPE_MENU | (MENU_POLY8_LFO_TARGET<<8),
         /*PAR_POLY8_VOICE4_LFO_RATE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_LFO_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE4_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
-        /*PAR_POLY8_VOICE4_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE4_LFO_TARGET*/ DTYPE_MENU | (MENU_POLY8_LFO_TARGET<<8),
         /*PAR_POLY8_VOICE5_LFO_RATE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_LFO_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE5_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
-        /*PAR_POLY8_VOICE5_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE5_LFO_TARGET*/ DTYPE_MENU | (MENU_POLY8_LFO_TARGET<<8),
         /*PAR_POLY8_VOICE6_LFO_RATE*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_LFO_AMOUNT*/ DTYPE_0B127,
         /*PAR_POLY8_VOICE6_LFO_WAVE*/ DTYPE_MENU | (MENU_POLY8_WAVE<<8),
-        /*PAR_POLY8_VOICE6_LFO_TARGET*/ DTYPE_0B15,
+        /*PAR_POLY8_VOICE6_LFO_TARGET*/ DTYPE_MENU | (MENU_POLY8_LFO_TARGET<<8),
 };
 
 
@@ -2762,6 +2762,8 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 		return (uint8_t)(waveformNames[0][0] + menu_numSamples);
 	case MENU_POLY8_WAVE:
 		return poly8WaveNames[0][0];
+	case MENU_POLY8_LFO_TARGET:
+		return poly8LfoTargetNames[0][0];
 	case MENU_ROLL_RATES:
 		return rollRateNames[0][0];
 	case MENU_MIDI_ROUTING:
@@ -2825,6 +2827,9 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 		break;
 	case MENU_POLY8_WAVE:
 		p = poly8WaveNames[(curParmVal < poly8WaveNames[0][0] ? curParmVal : 0) + 1];
+		break;
+	case MENU_POLY8_LFO_TARGET:
+		p = poly8LfoTargetNames[(curParmVal < poly8LfoTargetNames[0][0] ? curParmVal : 0) + 1];
 		break;
 	case MENU_WAVEFORM:
 		if(curParmVal < waveformNames[0][0])
