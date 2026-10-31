@@ -617,7 +617,7 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
 			menu_switchSubPage(buttonNr, 1);
 			//go to 1st parameter on sub page
 			menu_resetActiveParameter();
-			led_setActiveSelectButton(buttonNr);
+			led_setActiveSelectButton(menu_getSubPage());
 			menu_repaintAll();
 			break;
 
