@@ -236,7 +236,7 @@ enum NamesEnum
 	TEXT_POS_Y,						//70
 	TEXT_FLUX,
 	TEXT_SOM_FREQ,
-	TEXT_MIDI_MODE,	// This is now unused
+	TEXT_MIDI_MODE,	// OFF=Drum, ON=Poly8
 	TEXT_MIDI_ROUTING,
 	TEXT_MIDI_FILT_TX,
 	TEXT_MIDI_FILT_RX,
