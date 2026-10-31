@@ -32,6 +32,14 @@ jobs:
             cmake ninja-build python3 \
             gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
 
+      - name: Run Poly8 host DSP smoke test
+        working-directory: "lxr-desktop-app-main 4"
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -I Core/Inc \
+            Core/Src/Soundengine/DSPAudio/Poly8Engine.c \
+            tests/poly8_engine_smoke.c -lm -o /tmp/poly8_engine_smoke
+          /tmp/poly8_engine_smoke
+
       - name: Configure release build
         working-directory: "lxr-desktop-app-main 4"
         run: cmake --preset release -DARM_TOOLCHAIN_DIR=/usr/bin
