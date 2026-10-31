@@ -65,6 +65,18 @@ int main(void) {
         return 2;
     }
 
+    /* Updating synthesis parameters must not reset a live hardware fader. */
+    Poly8_Init(48000.0f);
+    Poly8_SetVoiceLevel(0, 0.25f);
+    Poly8_GetVoiceParams(0, &p);
+    p.cutoffHz = 2400.0f;
+    Poly8_SetVoiceParams(0, &p);
+    Poly8_GetVoiceParams(0, &p);
+    if (fabsf(p.voiceLevel - 0.25f) > 0.0001f) {
+        fprintf(stderr, "parameter update changed hardware fader gain (%g)\\n", p.voiceLevel);
+        return 7;
+    }
+
     /* The dedicated master fader is applied after the six layer gains. */
     const float masterHalf = render_one_layer(1.0f, 0.5f);
     const float masterQuarter = render_one_layer(1.0f, 0.25f);
