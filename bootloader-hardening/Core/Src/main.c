@@ -504,8 +504,6 @@ int main(void)
 			JumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
 			Jump_To_Application = (pFunction) JumpAddress;
 
-			__disable_irq();
-
 			HAL_RCC_DeInit();
 
 		//	HAL_DeInit();
